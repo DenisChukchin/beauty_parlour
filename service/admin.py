@@ -39,14 +39,9 @@ class ClientAdmin(admin.ModelAdmin):
     list_display = ('name', 'phonenumber',)
 
 
-class ClientInLine(admin.TabularInline):
-    model = Client
-
-
 @admin.register(Appointment)
 class AppointmentAdmin(admin.ModelAdmin):
     search_fields = ('client',)
     list_display = (
         'client', 'master', 'service', 'appointment_date', 'appointment_time'
     )
-    # inlines = (ClientInLine,)
