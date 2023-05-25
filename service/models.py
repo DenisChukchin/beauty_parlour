@@ -131,7 +131,7 @@ class Appointment(models.Model):
         Service, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='appointments', verbose_name='Какая услуга'
     )
-    appointment_date = models.CharField(
+    appointment_date = models.DateField(
         'Дата визита', null=True, max_length=30
     )
     appointment_time = models.CharField(
