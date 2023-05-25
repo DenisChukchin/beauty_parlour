@@ -132,7 +132,7 @@ class Appointment(models.Model):
         related_name='appointments', verbose_name='Какая услуга'
     )
     appointment_date = models.DateField(
-        'Дата визита', null=True, max_length=30
+        'Дата визита', null=True,
     )
     appointment_time = models.CharField(
         'Время визита',  max_length=30,  db_index=True,

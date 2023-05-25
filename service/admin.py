@@ -14,17 +14,25 @@ class SaloonAdmin(admin.ModelAdmin):
     inlines = (MasterInLine,)
 
 
+@admin.register(Service)
+class ServiceAdmin(admin.ModelAdmin):
+    search_fields = ('title',)
+    list_display = ('title', 'price',)
+    autocomplete_fields = ('masters',)
+    raw_id_fields = ('masters',)
+
+
+class ServiceInLine(admin.TabularInline):
+    model = Service
+    raw_id_fields = ('masters', 'category',)
+    autocomplete_fields = ('masters',)
+
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     search_fields = ('title',)
     list_display = ('title',)
-
-
-@admin.register(Service)
-class ServiceAdmin(admin.ModelAdmin):
-    search_fields = ('title',)
-    list_display = ('title', 'price')
-    raw_id_fields = ('masters',)
+    inlines = (ServiceInLine,)
 
 
 @admin.register(Master)
