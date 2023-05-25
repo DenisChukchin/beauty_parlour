@@ -37,7 +37,15 @@ class Master(models.Model):
 
 
 class Category(models.Model):
-    title = models.CharField('Категория услуг', max_length=30)
+    CATEGORY_CHOICES = (
+        ("Парикмахерские услуги", "Парикмахерские услуги"),
+        ("Маникюр", "Маникюр"),
+        ("Макияж", "Макияж"),
+    )
+    title = models.CharField(
+        'Категория услуг', max_length=30, blank=False,
+        choices=CATEGORY_CHOICES
+    )
 
     class Meta:
         verbose_name = 'Категория'
@@ -48,8 +56,17 @@ class Category(models.Model):
 
 
 class Service(models.Model):
+    SERVICE_CHOICES = (
+        ('Мужская стрижка', 'Мужская стрижка'),
+        ('Женская стрижка', 'Женская стрижка'),
+        ('Европейский маникюр', 'Европейский маникюр'),
+        ('Аппаратный маникюр', 'Аппаратный маникюр'),
+        ('Макияж стандарт', 'Макияж стандарт'),
+        ('Свадебный макияж', 'Свадебный макияж')
+    )
     title = models.CharField(
-        'Наименование услуги', max_length=30, blank=False
+        'Наименование услуги', max_length=30, blank=False,
+        choices=SERVICE_CHOICES
     )
     price = models.DecimalField(
         'Цена услуги', decimal_places=0, max_digits=5
@@ -89,6 +106,19 @@ class Client(models.Model):
 
 
 class Appointment(models.Model):
+    TIME_CHOICES = (
+        ("10:00", "10:00"), ("10:30", "10:30"),
+        ("11:00", "11:00"), ("11:30", "11:30"),
+        ("12:00", "12:00"), ("12:30", "12:30"),
+        ("13:00", "13:00"), ("13:30", "13:30"),
+        ("14:00", "14:00"), ("14:30", "14:30"),
+        ("15:00", "15:00"), ("15:30", "15:30"),
+        ("16:00", "16:00"), ("16:30", "16:30"),
+        ("17:00", "17:00"), ("17:30", "17:30"),
+        ("18:00", "18:00"), ("18:30", "18:30"),
+        ("19:00", "19:00"), ("19:30", "19:30"),
+        ("20:00", "20:00"), ("20:30", "20:30")
+    )
     client = models.ForeignKey(
         Client, on_delete=models.CASCADE,
         related_name='appointments', verbose_name='Кто клиент'
@@ -101,11 +131,12 @@ class Appointment(models.Model):
         Service, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='appointments', verbose_name='Какая услуга'
     )
-    appointment_date = models.DateField(
-        'Дата визита', null=True
+    appointment_date = models.CharField(
+        'Дата визита', null=True, max_length=30
     )
-    appointment_time = models.TimeField(
-        'Время визита', db_index=True
+    appointment_time = models.CharField(
+        'Время визита',  max_length=30,  db_index=True,
+        choices=TIME_CHOICES
     )
 
     class Meta:
