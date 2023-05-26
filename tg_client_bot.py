@@ -70,7 +70,7 @@ def print_booking_text(user_data, not_confirmed=True):
 def start_menu(message):
     if 'users' not in bot.__dict__.keys():
         bot.__dict__.update({'users': {}})
-        bot.__dict__['users'].update({message.from_user.id: EMPTY_CACHE})
+        bot.__dict__['users'].update({message.chat.id: EMPTY_CACHE})
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     markup.add(types.KeyboardButton(text='📞 Позвонить нам'))
     bot.send_message(message.chat.id, 'Добро пожаловать в BeautyCity!!!', reply_markup=markup)
@@ -253,6 +253,7 @@ def successful_booking(message):
     bot.send_message(message.chat.id, dialogue_text)
     bot.delete_message(message.chat.id, user_data['last_message_id'])
     start_menu(message)
+
 
 
 # Добавление кнопки "позвонить нам" в ReplyKeyboardMarkup
