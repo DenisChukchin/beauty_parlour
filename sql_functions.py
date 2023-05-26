@@ -8,8 +8,6 @@ def SQL_register_new_user(tg_id, name, phone):
     conn = sqlite3.connect(BASE)
     cur = conn.cursor()
     time_create = datetime.datetime.now()
-    print(time_create)
-    print(type(time_create))
     exec_text = f"""
         INSERT INTO 'service_client' (name, phonenumber, user_id, time_create)
         VALUES ('{name}','{phone}','{tg_id}','{time_create}')
