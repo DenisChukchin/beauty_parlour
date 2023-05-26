@@ -63,8 +63,6 @@ def print_booking_text(user_data, not_confirmed=True):
         dialogue_text += f'Дата: {user_data["date"]}' + '\n'
     if user_data["time"]:
         dialogue_text += f'Время: {user_data["time"]}' + '\n'
-    if user_data["phone"]:
-        dialogue_text += f'Ваш номер для связи: {user_data["phone"]}' + '\n'
 
     dialogue_text += '\n'
 
@@ -116,8 +114,7 @@ def main_menu(message):
     )
 
     markup.add(about_button, choose_master_button, choose_procedure_button)
-    if not user_data['first_time']:
-        markup.add(send_feedback_button)
+    # markup.add(send_feedback_button)
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
@@ -129,6 +126,7 @@ def callback_inline(call):
         bot.__dict__['users'].update({call.message.chat.id: EMPTY_CACHE})
         bot.delete_message(call.message.chat.id, call.message.id)
         start_menu(call.message)
+        call.data = ''
 
     user_data = bot.__dict__['users'][call.message.chat.id]
     args = call.data.split('#')
@@ -269,20 +267,31 @@ def confirmation(message, time=None):
     dialogue_text = print_booking_text(user_data)
 
     if user_data['first_time']:
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        markup.row(types.InlineKeyboardButton('<< Назад', callback_data='re_choose_time#cut_time'))
         dialogue_text += 'Отправьте в чат, свой контактный номер.\n\n'
         dialogue_text += 'Отправляя нам свой телефон, Вы подтверждаете своё согласие на обработку Ваших данных.\n'
         dialogue_text += 'Более подробно с текстом соглашения можно ознакомиться по ссылке: www.confirmation.ru'
+
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup.row(types.InlineKeyboardButton('<< Назад', callback_data='re_choose_time#cut_time'))
         bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
         user_data['waiting_for_phone'] = True
         bot.register_next_step_handler(message, get_phone)
     else:
-        print('Not_First')
+        dialogue_text += f'Ваш номер для связи: {user_data["phone"]}' + '\n\n'
+        dialogue_text += 'Подтвердите Ваши контактные данные,\n'
+        dialogue_text += 'или отправьте в чат, другой номер для связи.\n\n'
+
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup.row(types.InlineKeyboardButton('Подтвердить Запись', callback_data='successful_booking'))
+        markup.row(types.InlineKeyboardButton('<< Назад', callback_data='re_choose_time#cut_time'))
+        bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
+        user_data['waiting_for_phone'] = True
+        bot.register_next_step_handler(message, get_phone)
 
 
 def successful_booking(message):
     user_data = bot.__dict__['users'][message.chat.id]
+    user_data['waiting_for_phone'] = False
     if user_data['first_time']:
         username = f'{message.chat.first_name} {message.chat.last_name}({message.chat.username})'
         username = username.replace(' None', '')
@@ -291,6 +300,7 @@ def successful_booking(message):
     else:
         SQL_put_user_phone(message.chat.id, user_data['phone'])
     dialogue_text = print_booking_text(user_data, not_confirmed=False)
+    dialogue_text += f'Ваш номер для связи: {user_data["phone"]}' + '\n\n'
     bot.send_message(message.chat.id, dialogue_text)
     bot.delete_message(message.chat.id, user_data['last_message_id'])
     start_menu(message)
@@ -321,6 +331,7 @@ def get_phone(message):
     user_data['waiting_for_phone'] = False
 
     dialogue_text = print_booking_text(user_data)
+    dialogue_text += f'Ваш номер для связи: {user_data["phone"]}' + '\n\n'
     dialogue_text += f'Подтвердите запись, или введите другой телефон для связи'
 
     markup = types.InlineKeyboardMarkup(row_width=1)
