@@ -27,6 +27,7 @@ class Master(models.Model):
     saloon = models.ForeignKey(
         Saloon, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='masters', verbose_name='В каком салоне')
+    time_create = models.DateTimeField('Создан', auto_now_add=True)
 
     class Meta:
         verbose_name = 'Мастер'
@@ -96,6 +97,7 @@ class Client(models.Model):
         'Номер телефона клиента', max_length=20,
         db_index=True
     )
+    time_create = models.DateTimeField('Создан', auto_now_add=True)
 
     class Meta:
         verbose_name = 'Клиент'
@@ -138,6 +140,7 @@ class Appointment(models.Model):
         'Время визита',  max_length=30,  db_index=True,
         choices=TIME_CHOICES
     )
+    time_create = models.DateTimeField('Создан', auto_now_add=True)
 
     class Meta:
         verbose_name = 'Запись на услугу'

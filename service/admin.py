@@ -19,12 +19,10 @@ class ServiceAdmin(admin.ModelAdmin):
     search_fields = ('title',)
     list_display = ('title', 'price',)
     autocomplete_fields = ('masters',)
-    raw_id_fields = ('masters',)
 
 
 class ServiceInLine(admin.TabularInline):
     model = Service
-    raw_id_fields = ('masters', 'category',)
     autocomplete_fields = ('masters',)
 
 
@@ -38,18 +36,22 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(Master)
 class MasterAdmin(admin.ModelAdmin):
     search_fields = ('name',)
-    list_display = ('name', 'saloon')
+    list_display = ('id', 'name', 'saloon', 'time_create',)
+    readonly_fields = ('time_create',)
 
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
     search_fields = ('name',)
-    list_display = ('name', 'phonenumber',)
+    list_display = ('id', 'name', 'phonenumber', 'time_create',)
+    readonly_fields = ('time_create',)
 
 
 @admin.register(Appointment)
 class AppointmentAdmin(admin.ModelAdmin):
     search_fields = ('client',)
+    readonly_fields = ('time_create',)
     list_display = (
-        'client', 'master', 'service', 'appointment_date', 'appointment_time'
+        'client', 'master', 'service',
+        'appointment_date', 'appointment_time', 'time_create'
     )
