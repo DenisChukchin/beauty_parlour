@@ -43,7 +43,7 @@ class MasterAdmin(admin.ModelAdmin):
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
     search_fields = ('name',)
-    list_display = ('id', 'name', 'phonenumber', 'time_create',)
+    list_display = ('id', 'name', 'phonenumber', 'time_create', 'user_id')
     readonly_fields = ('time_create',)
 
 
