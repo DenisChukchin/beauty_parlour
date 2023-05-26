@@ -4,6 +4,12 @@ import telebot
 from telebot import types
 from environs import Env
 
+from sql_functions import (
+    SQL_get_user_data,
+    SQL_register_new_user,
+    SQL_put_user_phone
+)
+
 
 env = Env()
 env.read_env(override=True)
@@ -76,6 +82,12 @@ def start_menu(message):
     bot.send_message(message.chat.id, 'Добро пожаловать в BeautyCity!!!', reply_markup=markup)
     bot.register_next_step_handler(message, call_us)
 
+    user_data = bot.__dict__['users'][message.chat.id]
+    user__in_db = SQL_get_user_data(message.chat.id)
+    if user__in_db:
+        user_data['first_time'] = False
+        user_data['phone'] = user__in_db['phone']
+
     dialogue_text = 'Выберите пункт меню:'
     markup_inline = types.InlineKeyboardMarkup(row_width=1)
     about_button = types.InlineKeyboardButton("О Нас", callback_data='about')
@@ -115,6 +127,7 @@ def callback_inline(call):
     if 'users' not in bot.__dict__.keys():      # Если сервер перезапускался, то клиент вернётся на стартовую страницу
         bot.__dict__.update({'users': {}})
         bot.__dict__['users'].update({call.message.chat.id: EMPTY_CACHE})
+        bot.delete_message(call.message.chat.id, call.message.id)
         start_menu(call.message)
 
     user_data = bot.__dict__['users'][call.message.chat.id]
@@ -270,7 +283,13 @@ def confirmation(message, time=None):
 
 def successful_booking(message):
     user_data = bot.__dict__['users'][message.chat.id]
-    print(user_data)
+    if user_data['first_time']:
+        username = f'{message.chat.first_name} {message.chat.last_name}({message.chat.username})'
+        username = username.replace(' None', '')
+        username = username.replace('None', '')
+        SQL_register_new_user(message.chat.id, username, user_data['phone'])
+    else:
+        SQL_put_user_phone(message.chat.id, user_data['phone'])
     dialogue_text = print_booking_text(user_data, not_confirmed=False)
     bot.send_message(message.chat.id, dialogue_text)
     bot.delete_message(message.chat.id, user_data['last_message_id'])
