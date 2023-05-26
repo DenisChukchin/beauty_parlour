@@ -90,10 +90,18 @@ def main_menu(message):
     user_data = bot.__dict__['users'][message.chat.id]
     dialogue_text = 'Выберите пункт меню:'
     markup = types.InlineKeyboardMarkup(row_width=1)
-    about_button = types.InlineKeyboardButton("О Нас", callback_data='about')
-    choose_master_button = types.InlineKeyboardButton("Выбор мастера", callback_data='choose_master')
-    choose_procedure_button = types.InlineKeyboardButton("Выбор процедуры", callback_data='choose_procedure')
-    send_feedback_button = types.InlineKeyboardButton("Оставить отзыв о последнем посещении", callback_data='send_feedback')
+    about_button = types.InlineKeyboardButton(
+        "О Нас", callback_data='about'
+    )
+    choose_master_button = types.InlineKeyboardButton(
+        "Выбор мастера", callback_data='choose_master'
+    )
+    choose_procedure_button = types.InlineKeyboardButton(
+        "Выбор процедуры", callback_data='choose_procedure'
+    )
+    send_feedback_button = types.InlineKeyboardButton(
+        "Оставить отзыв о последнем посещении", callback_data='send_feedback'
+    )
 
     markup.add(about_button, choose_master_button, choose_procedure_button)
     if not user_data['first_time']:
@@ -112,25 +120,38 @@ def callback_inline(call):
     user_data = bot.__dict__['users'][call.message.chat.id]
     args = call.data.split('#')
     if len(args) > 1:
-        if args[1] == 'cut_date': user_data['date'] = False
-        if args[1] == 'cut_time': user_data['time'] = False
+        if args[1] == 'cut_date':
+            user_data['date'] = False
+        if args[1] == 'cut_time':
+            user_data['time'] = False
         if args[1] == 'cut_phone':
             user_data['phone'] = False
             user_data['time'] = False
 
-    if call.data == 'main_menu': main_menu(call.message)
-    if call.data == 'about': about(call.message)
-    if call.data == 'choose_master': choose_master(call.message)
-    if call.data.startswith('master'): choose_date(call.message, master=int(args[1]))
-    if call.data.startswith('re_choose_date'): choose_date(call.message)
-    if call.data.startswith('choose_time'): choose_time(call.message, args[1])
-    if call.data.startswith('re_choose_time'): choose_time(call.message)
-    if call.data.startswith('confirmation'): confirmation(call.message, args[1])
+    if call.data == 'main_menu':
+        main_menu(call.message)
+    if call.data == 'about':
+        about(call.message)
+    if call.data == 'choose_master':
+        choose_master(call.message)
+    if call.data.startswith('master'):
+        choose_date(call.message, master=int(args[1]))
+    if call.data.startswith('re_choose_date'):
+        choose_date(call.message)
+    if call.data.startswith('choose_time'):
+        choose_time(call.message, args[1])
+    if call.data.startswith('re_choose_time'):
+        choose_time(call.message)
+    if call.data.startswith('confirmation'):
+        confirmation(call.message, args[1])
 
-    if call.data.startswith('successful_booking'): successful_booking(call.message)
+    if call.data.startswith('successful_booking'):
+        successful_booking(call.message)
 
-    if call.data == 'choose_procedure': choose_procedure(call.message)
-    if call.data.startswith('procedure'): choose_date(call.message, procedure=int(args[1]))
+    if call.data == 'choose_procedure':
+        choose_procedure(call.message)
+    if call.data.startswith('procedure'):
+        choose_date(call.message, procedure=int(args[1]))
 
 
 def about(message):
@@ -249,6 +270,7 @@ def confirmation(message, time=None):
 
 def successful_booking(message):
     user_data = bot.__dict__['users'][message.chat.id]
+    print(user_data)
     dialogue_text = print_booking_text(user_data, not_confirmed=False)
     bot.send_message(message.chat.id, dialogue_text)
     bot.delete_message(message.chat.id, user_data['last_message_id'])
@@ -263,9 +285,15 @@ def call_us(message):
     if user_data.get('waiting_for_phone', False):
         get_phone(message)
     elif "позвонить нам" in message.text.lower():
-        bot.send_message(message.chat.id, "Рады звонку в любое время – 8 800 555 35 35")
+        bot.send_message(
+            message.chat.id, "Рады звонку в любое время – 8 800 555 35 35"
+        )
     else:
-        bot.send_message(message.chat.id, "Выберите действие из меню или введите 'позвонить нам', чтобы связаться с нами.")
+        bot.send_message(
+            message.chat.id, "Выберите действие из меню"
+                             " или введите 'позвонить нам',"
+                             " чтобы связаться с нами."
+        )
 
 
 def get_phone(message):
@@ -284,8 +312,8 @@ def get_phone(message):
         bot.register_next_step_handler(message, get_phone)
         time.sleep(2)
         bot.delete_message(message.chat.id, message.id)
-    except Exception as e:
-        e
+    except Exception as error:
+        print(error)
 
 
 if __name__ == '__main__':
