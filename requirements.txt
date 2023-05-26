@@ -4,3 +4,5 @@ django-phonenumber-field==7.1.0
 phonenumbers==8.13.11
 python-dotenv==1.0.0
 Pillow==9.5.0
+environs==9.5.0
+pyTelegramBotAPI==4.12.0
