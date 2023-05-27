@@ -10,6 +10,11 @@ from sql_functions import (
     SQL_put_user_phone
 )
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 env = Env()
 env.read_env(override=True)
@@ -74,12 +79,13 @@ def print_booking_text(user_data, not_confirmed=True):
 def start_menu(message):
     if 'users' not in bot.__dict__.keys():
         bot.__dict__.update({'users': {}})
-        bot.__dict__['users'].update({message.chat.id: EMPTY_CACHE})
+
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     markup.add(types.KeyboardButton(text='📞 Позвонить нам'))
     bot.send_message(message.chat.id, 'Добро пожаловать в BeautyCity!!!', reply_markup=markup)
     bot.register_next_step_handler(message, call_us)
 
+    bot.__dict__['users'].update({message.chat.id: EMPTY_CACHE})
     user_data = bot.__dict__['users'][message.chat.id]
     user__in_db = SQL_get_user_data(message.chat.id)
     if user__in_db:
@@ -347,4 +353,11 @@ def get_phone(message):
 
 
 if __name__ == '__main__':
-    bot.infinity_polling()
+
+    print('\n\n\n')
+
+    try:
+        bot.infinity_polling()
+    except Exception as e:
+        logger.error(f'Infinity polling exception: {e}', exc_info=True)
+        time.sleep(5)  # Ожидание перед повторным запуском опроса
