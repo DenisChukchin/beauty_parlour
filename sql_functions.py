@@ -47,12 +47,12 @@ def sql_put_user_phone(tg_id, phone):
     conn.close()
 
 
-def registration_new_appointment():
+def registration_new_appointment(meet_date, meet_time, tg_id, master_id, service_id):
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
     time_create = datetime.datetime.now()
     appointment_information = [
-        (appointment_date, appointment_time, time_create, tg_id, master_id, service_id)
+        (meet_date, meet_time, time_create, tg_id, master_id, service_id)
     ]
     cursor.executemany('''
                        INSERT INTO 'service_appointment' 
