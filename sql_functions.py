@@ -4,7 +4,7 @@ import datetime
 BASE = 'db.sqlite3'
 
 
-def SQL_register_new_user(tg_id, name, phone):
+def sql_register_new_user(tg_id, name, phone):
     conn = sqlite3.connect(BASE)
     cur = conn.cursor()
     time_create = datetime.datetime.now()
@@ -17,7 +17,7 @@ def SQL_register_new_user(tg_id, name, phone):
     conn.close()
 
 
-def SQL_get_user_data(tg_id) -> dict:
+def sql_get_user_data(tg_id) -> dict:
 
     conn = sqlite3.connect(BASE)
     cur = conn.cursor()
@@ -38,7 +38,7 @@ def SQL_get_user_data(tg_id) -> dict:
     return formated_result
 
 
-def SQL_put_user_phone(tg_id, phone):
+def sql_put_user_phone(tg_id, phone):
     conn = sqlite3.connect(BASE)
     cur = conn.cursor()
     exec_text = f"UPDATE 'service_client' SET phonenumber={phone} WHERE user_id={tg_id}"
@@ -47,17 +47,21 @@ def SQL_put_user_phone(tg_id, phone):
     conn.close()
 
 
-def sql_register_new_appointment():
-    conn = sqlite3.connect(BASE)
-    cur = conn.cursor()
+def registration_new_appointment():
+    connection = sqlite3.connect(BASE)
+    cursor = connection.cursor()
     time_create = datetime.datetime.now()
-    exec_text = f"""
-        INSERT INTO 'service_client' (name, phonenumber, user_id, time_create)
-        VALUES ('{name}','{phone}','{tg_id}','{time_create}')
-        """
-    cur.execute(exec_text)
-    conn.commit()
-    conn.close()
+    appointment_information = [
+        (appointment_date, appointment_time, time_create, tg_id, master_id, service_id)
+    ]
+    cursor.executemany('''
+                       INSERT INTO 'service_appointment' 
+                       (appointment_date, appointment_time,
+                       time_create, client_id, master_id, service_id)
+                       VALUES (?,?,?,?,?,?)''', appointment_information)
+
+    connection.commit()
+    connection.close()
 
 
 def get_masters_name_from_base():

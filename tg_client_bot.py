@@ -5,9 +5,10 @@ from telebot import types
 from environs import Env
 
 from sql_functions import (
-    SQL_get_user_data,
-    SQL_register_new_user,
-    SQL_put_user_phone,
+    sql_get_user_data,
+    sql_register_new_user,
+    sql_put_user_phone,
+    registration_new_appointment,
     get_masters_name_from_base,
     get_services_from_base
 )
@@ -87,7 +88,7 @@ def start_menu(message):
 
     bot.__dict__['users'].update({message.chat.id: EMPTY_CACHE})
     user_data = bot.__dict__['users'][message.chat.id]
-    user__in_db = SQL_get_user_data(message.chat.id)
+    user__in_db = sql_get_user_data(message.chat.id)
     if user__in_db:
         user_data['first_time'] = False
         user_data['phone'] = user__in_db['phone']
@@ -302,15 +303,14 @@ def successful_booking(message):
         username = f'{message.chat.first_name} {message.chat.last_name}({message.chat.username})'
         username = username.replace(' None', '')
         username = username.replace('None', '')
-        SQL_register_new_user(message.chat.id, username, user_data['phone'])
+        sql_register_new_user(message.chat.id, username, user_data['phone'])
     else:
-        SQL_put_user_phone(message.chat.id, user_data['phone'])
+        sql_put_user_phone(message.chat.id, user_data['phone'])
     dialogue_text = print_booking_text(user_data, not_confirmed=False)
     dialogue_text += f'Ваш номер для связи: {user_data["phone"]}' + '\n\n'
     bot.send_message(message.chat.id, dialogue_text)
     bot.delete_message(message.chat.id, user_data['last_message_id'])
     start_menu(message)
-
 
 
 # Добавление кнопки "позвонить нам" в ReplyKeyboardMarkup
