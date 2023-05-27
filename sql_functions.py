@@ -45,3 +45,42 @@ def SQL_put_user_phone(tg_id, phone):
     cur.execute(exec_text)
     conn.commit()
     conn.close()
+
+
+def sql_register_new_appointment():
+    conn = sqlite3.connect(BASE)
+    cur = conn.cursor()
+    time_create = datetime.datetime.now()
+    exec_text = f"""
+        INSERT INTO 'service_client' (name, phonenumber, user_id, time_create)
+        VALUES ('{name}','{phone}','{tg_id}','{time_create}')
+        """
+    cur.execute(exec_text)
+    conn.commit()
+    conn.close()
+
+
+def get_masters_name_from_base():
+    connection = sqlite3.connect(BASE)
+    cursor = connection.cursor()
+    all_masters = cursor.execute("SELECT * FROM service_master")
+    masters = cursor.fetchall()
+    masters_details = {}
+    for master in masters:
+        id_masters = master[0]
+        masters_details[id_masters] = \
+            {all_masters.description[i][0]: master[i] for i in range(len(master))}
+    return masters_details
+
+
+def get_services_from_base():
+    connection = sqlite3.connect(BASE)
+    cursor = connection.cursor()
+    all_services = cursor.execute("SELECT * FROM service_service")
+    services = cursor.fetchall()
+    masters_details = {}
+    for service in services:
+        id_service = service[0]
+        masters_details[id_service] = \
+            {all_services.description[i][0]: service[i] for i in range(len(service))}
+    return masters_details

@@ -7,7 +7,9 @@ from environs import Env
 from sql_functions import (
     SQL_get_user_data,
     SQL_register_new_user,
-    SQL_put_user_phone
+    SQL_put_user_phone,
+    get_masters_name_from_base,
+    get_services_from_base
 )
 
 import logging
@@ -45,10 +47,8 @@ TIMES = [
     '20:00', '20:30'
 ]
 
-MASTERS = {
-    1: {'id': 1, 'name': 'Ольга', 'procedure': 'Стрижка/укладка волос'},
-    2: {'id': 2, 'name': 'Татьяна', 'procedure': 'Макияж'}
-}
+MASTERS = get_masters_name_from_base
+SERVICES = get_services_from_base
 
 
 def print_booking_text(user_data, not_confirmed=True):
