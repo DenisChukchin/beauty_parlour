@@ -74,6 +74,7 @@ def get_masters_name_from_base():
         id_masters = master[0]
         masters_details[id_masters] = \
             {all_masters.description[i][0]: master[i] for i in range(len(master))}
+    connection.close()
     return masters_details
 
 
@@ -87,4 +88,5 @@ def get_services_from_base():
         id_service = service[0]
         masters_details[id_service] = \
             {all_services.description[i][0]: service[i] for i in range(len(service))}
+    connection.close()
     return masters_details
