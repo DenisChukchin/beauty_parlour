@@ -71,8 +71,8 @@ def get_masters_name_from_base():
     masters = cursor.fetchall()
     masters_details = {}
     for master in masters:
-        id_masters = master[0]
-        masters_details[id_masters] = \
+        masters_id = master[0]
+        masters_details[masters_id] = \
             {all_masters.description[i][0]: master[i] for i in range(len(master))}
     connection.close()
     return masters_details
@@ -85,8 +85,8 @@ def get_services_from_base():
     services = cursor.fetchall()
     masters_details = {}
     for service in services:
-        id_service = service[0]
-        masters_details[id_service] = \
+        services_id = service[0]
+        masters_details[services_id] = \
             {all_services.description[i][0]: service[i] for i in range(len(service))}
     connection.close()
     return masters_details
