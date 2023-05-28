@@ -35,9 +35,9 @@ EMPTY_CACHE = {
     'last_message_id': False
     }
 
-TIMES = get_free_time
-MASTERS = get_masters_name_from_base
-SERVICES = get_services_from_base
+times = get_free_time
+masters = get_masters_name_from_base()
+services = get_services_from_base()
 
 
 def print_booking_text(user_data, not_confirmed=True):
@@ -48,11 +48,11 @@ def print_booking_text(user_data, not_confirmed=True):
         dialogue_text = 'Поздравляем с успешной записью!' + '\n'
         dialogue_text += '===============================' + '\n\n'
 
-    if user_data["procedure"]:
-        dialogue_text += f'Сервис: {user_data["procedure"]}' + '\n'
+    if user_data["title"]:
+        dialogue_text += f'Сервис: {user_data["title"]}' + '\n'
     if user_data["master"]:
-        dialogue_text += f'Мастер: {MASTERS[user_data["master"]]["name"]}' + '\n'
-        dialogue_text += f'Услуга: {MASTERS[user_data["master"]]["procedure"]}' + '\n'
+        dialogue_text += f'Мастер: {masters[user_data["master"]]["name"]}' + '\n'
+        dialogue_text += f'Услуга: {services[user_data["service"]]["title"]}' + '\n'
     if user_data["date"]:
         dialogue_text += f'Дата: {user_data["date"]}' + '\n'
     if user_data["time"]:
@@ -175,23 +175,31 @@ def about(message):
 
 def choose_master(message):
     dialogue_text = 'Выберите мастера:'
-    markup = types.InlineKeyboardMarkup(row_width=2)
-    master_button_1 = types.InlineKeyboardButton("Ольга", callback_data='master#1')
-    master_button_2 = types.InlineKeyboardButton("Татьяна", callback_data='master#2')
+    total_masters = len(masters)
+    markup = types.InlineKeyboardMarkup(row_width=total_masters)
+    buttons = []
+    for i in range(total_masters):
+        masters_name = masters[i+1]['name']
+        buttons.append(types.InlineKeyboardButton(masters_name, callback_data=f'master#{i+1}'))
     button_back = types.InlineKeyboardButton('<< Назад', callback_data='main_menu')
-
-    markup.add(master_button_1, master_button_2, button_back)
+    for i in range(0, len(buttons), 1):
+        markup.add(*buttons[i:i + 1])
+    markup.add(button_back)
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
 def choose_procedure(message):
     dialogue_text = 'Выберите процедуру:'
-    markup = types.InlineKeyboardMarkup(row_width=2)
-    procedure_1 = types.InlineKeyboardButton("Маникюр", callback_data='procedure#1')
-    procedure_2 = types.InlineKeyboardButton("Массаж", callback_data='procedure#2')
+    total_services = len(services)
+    markup = types.InlineKeyboardMarkup(row_width=total_services)
+    buttons = []
+    for i in range(total_services):
+        services_name = services[i + 1]['title']
+        buttons.append(types.InlineKeyboardButton(services_name, callback_data=f'procedure#{i + 1}'))
     button_back = types.InlineKeyboardButton('<< Назад', callback_data='main_menu')
-
-    markup.add(procedure_1, procedure_2, button_back)
+    for i in range(0, len(buttons), 1):
+        markup.add(*buttons[i:i + 1])
+    markup.add(button_back)
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
