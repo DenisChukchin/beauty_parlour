@@ -1,8 +1,11 @@
 import time
 import datetime
+from pprint import pprint
+
 import telebot
 from telebot import types
 from environs import Env
+
 
 from sql_functions import (
     sql_get_user_data,
@@ -17,9 +20,10 @@ from sql_functions import (
 
 import logging
 
+BASE = 'db.sqlite3'
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 env = Env()
 env.read_env(override=True)
@@ -34,12 +38,11 @@ EMPTY_CACHE = {
     'time': False,
     'phone': False,
     'last_message_id': False
-    }
+}
 
 times = get_free_time
 
 def print_booking_text(user_data, not_confirmed=True):
-
     if not_confirmed:
         dialogue_text = ' ---- Бронирование Записи ----' + '\n\n'
     else:
@@ -51,13 +54,12 @@ def print_booking_text(user_data, not_confirmed=True):
     if user_data["master"]:
         dialogue_text += f'Мастер: {user_data["master"]["name"]}' + '\n'
         # dialogue_text += 'Услуга: {}' + '\n'
+
     if user_data["date"]:
         dialogue_text += f'Дата: {user_data["date"]}' + '\n'
     if user_data["time"]:
         dialogue_text += f'Время: {user_data["time"]}' + '\n'
-
     dialogue_text += '\n'
-
     return dialogue_text
 
 
@@ -123,15 +125,14 @@ def main_menu(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
-
-    if 'users' not in bot.__dict__.keys():      # Если сервер перезапускался, то клиент вернётся на стартовую страницу
+    if 'users' not in bot.__dict__.keys():  # Если сервер перезапускался, то клиент вернётся на стартовую страницу
         bot.__dict__.update({'users': {}})
         bot.__dict__['users'].update({call.message.chat.id: EMPTY_CACHE})
         bot.delete_message(call.message.chat.id, call.message.id)
         start_menu(call.message)
         call.data = ''
 
-    user_data = bot.__dict__['users'][call.message.chat.id]
+    user_data = bot.__dict__.get('users', {}).get(call.message.chat.id, EMPTY_CACHE)
     args = call.data.split('#')
     if len(args) > 1:
         if args[1] == 'cut_date': user_data['date'] = False
@@ -196,15 +197,21 @@ def choose_procedure(message):
 
 
 def choose_date(message, master=None, procedure=None):
-
     user_data = bot.__dict__['users'][message.chat.id]
     if master:
         user_data.update({'master': get_masters_name_from_base()[master]})
     else:
-        master = user_data['master']
+        master = user_data.get('master')
 
     if procedure:
         user_data.update({'procedure': get_services_from_base()[procedure]})
+    else:
+        procedure = user_data.get('procedure')
+
+    if (user_data['master']):
+        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_master')
+    else:
+        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_procedure')
     else:
         procedure = user_data['procedure']
 
@@ -215,13 +222,12 @@ def choose_date(message, master=None, procedure=None):
 
 
     buttons = []
-    days = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
     today = datetime.datetime.now().date()
     days_to_end_of_next_week = 14 - today.weekday()
 
     for i in range(days_to_end_of_next_week):
         new_date = today + datetime.timedelta(days=i)
-        formatted_date = f"{new_date.day:02d}.{new_date.month:02d} ({days[new_date.weekday()]})"
+        formatted_date = f"{new_date.day:02d}-{new_date.month:02d}-{new_date.year}"
         buttons.append(types.InlineKeyboardButton(formatted_date, callback_data=f'choose_time#{formatted_date}'))
 
     dialogue_text = print_booking_text(user_data)
@@ -235,45 +241,40 @@ def choose_date(message, master=None, procedure=None):
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
-def choose_time(message, date=None):
 
+
+
+def choose_time(message, date=None, master_id=None):
     user_data = bot.__dict__['users'][message.chat.id]
     if date:
         user_data.update({'date': date})
     else:
         date = user_data['date']
-
     dialogue_text = print_booking_text(user_data)
     dialogue_text += 'Выберите доступное время:'
-
     markup = types.InlineKeyboardMarkup(row_width=4)
     buttons = []
     date_for_sql_query = restoring_user_date_for_sql_query(date)
     for item in get_free_time(master_id=user_data['master']['id'], appointment_date=date_for_sql_query):
         buttons.append(types.InlineKeyboardButton(item, callback_data=f'confirmation#{item}'))
-
     for i in range(0, len(buttons), 4):
-        markup.add(*buttons[i:i+4])
+        markup.add(*buttons[i:i + 4])
     markup.row(types.InlineKeyboardButton('<< Назад', callback_data='re_choose_date#cut_date'))
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
 def confirmation(message, time=None):
-
     user_data = bot.__dict__['users'][message.chat.id]
     if time:
         user_data.update({'time': time})
         user_data.update({'last_message_id': message.id})
     else:
-        time = user_data['time']
-
+        time = user_data.get('time')
     dialogue_text = print_booking_text(user_data)
-
-    if user_data['first_time']:
+    if user_data.get('first_time'):
         dialogue_text += 'Отправьте в чат, свой контактный номер.\n\n'
         dialogue_text += 'Отправляя нам свой телефон, Вы подтверждаете своё согласие на обработку Ваших данных.\n'
         dialogue_text += 'Более подробно с текстом соглашения можно ознакомиться по ссылке: www.confirmation.ru'
-
         markup = types.InlineKeyboardMarkup(row_width=1)
         markup.row(types.InlineKeyboardButton('<< Назад', callback_data='re_choose_time#cut_time'))
         bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
@@ -283,7 +284,6 @@ def confirmation(message, time=None):
         dialogue_text += f'Ваш номер для связи: {user_data["phone"]}' + '\n\n'
         dialogue_text += 'Подтвердите Ваши контактные данные,\n'
         dialogue_text += 'или отправьте в чат, другой номер для связи.\n\n'
-
         markup = types.InlineKeyboardMarkup(row_width=1)
         markup.row(types.InlineKeyboardButton('Подтвердить Запись', callback_data='successful_booking'))
         markup.row(types.InlineKeyboardButton('<< Назад', callback_data='re_choose_time#cut_time'))
@@ -292,21 +292,25 @@ def confirmation(message, time=None):
         bot.register_next_step_handler(message, get_phone)
 
 
-def successful_booking(message):
-    user_data = bot.__dict__['users'][message.chat.id]
+def successful_booking(call, tg_id):
+    user_data = bot.__dict__['users'][call.chat.id]
     user_data['waiting_for_phone'] = False
     if user_data['first_time']:
-        username = f'{message.chat.first_name} {message.chat.last_name}({message.chat.username})'
+        username = f'{call.chat.first_name} {call.chat.last_name}({call.chat.username})'
         username = username.replace(' None', '')
         username = username.replace('None', '')
-        sql_register_new_user(message.chat.id, username, user_data['phone'])
+        sql_register_new_user(call.chat.id, username, user_data['phone'])
     else:
-        sql_put_user_phone(message.chat.id, user_data['phone'])
+        sql_put_user_phone(call.chat.id, user_data['phone'])
+
     dialogue_text = print_booking_text(user_data, not_confirmed=False)
     dialogue_text += f'Ваш номер для связи: {user_data["phone"]}' + '\n\n'
-    bot.send_message(message.chat.id, dialogue_text)
-    bot.delete_message(message.chat.id, user_data['last_message_id'])
-    start_menu(message)
+    message = bot.send_message(call.chat.id, dialogue_text)
+    bot.delete_message(call.chat.id, user_data['last_message_id'])
+    user_data['last_message_id'] = message.message_id
+    registration_new_appointment(user_data.get('date'), user_data.get('time'), tg_id, user_data.get('master'), user_data.get('procedure'))
+    start_menu(call)
+
 
 
 # Добавление кнопки "позвонить нам" в ReplyKeyboardMarkup
@@ -343,15 +347,14 @@ def get_phone(message):
         bot.edit_message_text(dialogue_text, message.chat.id, user_data['last_message_id'], reply_markup=markup)
         bot.register_next_step_handler(message, get_phone)
         time.sleep(2)
-        bot.delete_message(message.chat.id, message.id)
+        bot.delete_message(message.chat.id, user_data['last_message_id'])
+        user_data['last_message_id'] = message.message_id
     except Exception as error:
         print(error)
 
 
 if __name__ == '__main__':
-
     print('\n\n\n')
-
     try:
         bot.infinity_polling()
     except Exception as e:
