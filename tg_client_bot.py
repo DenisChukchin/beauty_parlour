@@ -105,18 +105,10 @@ def main_menu(message):
     user_data = bot.__dict__['users'][message.chat.id]
     dialogue_text = 'Выберите пункт меню:'
     markup = types.InlineKeyboardMarkup(row_width=1)
-    about_button = types.InlineKeyboardButton(
-        "О Нас", callback_data='about'
-    )
-    choose_master_button = types.InlineKeyboardButton(
-        "Выбор мастера", callback_data='choose_master'
-    )
-    choose_procedure_button = types.InlineKeyboardButton(
-        "Выбор процедуры", callback_data='choose_procedure'
-    )
-    send_feedback_button = types.InlineKeyboardButton(
-        "Оставить отзыв о последнем посещении", callback_data='send_feedback'
-    )
+    about_button = types.InlineKeyboardButton("О Нас", callback_data='about')
+    choose_master_button = types.InlineKeyboardButton("Выбор мастера", callback_data='choose_master')
+    choose_procedure_button = types.InlineKeyboardButton("Выбор процедуры", callback_data='choose_procedure')
+    send_feedback_button = types.InlineKeyboardButton("Оставить отзыв о последнем посещении", callback_data='send_feedback')
 
     markup.add(about_button, choose_master_button, choose_procedure_button)
     # markup.add(send_feedback_button)
@@ -174,7 +166,8 @@ def about(message):
 def choose_master(message):
     dialogue_text = 'Выберите мастера:'
     buttons = []
-    for item in get_masters_name_from_base().values():
+    for item in get_masters_name_from_base():
+        print(item)        
         buttons.append(types.InlineKeyboardButton(text=item['name'], callback_data=f'master#{item["id"]}'))
 
     markup = types.InlineKeyboardMarkup(row_width=3)
@@ -207,13 +200,6 @@ def choose_date(message, master=None, procedure=None):
         user_data.update({'procedure': get_services_from_base()[procedure]})
     else:
         procedure = user_data.get('procedure')
-
-    if (user_data['master']):
-        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_master')
-    else:
-        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_procedure')
-    else:
-        procedure = user_data['procedure']
 
     if (user_data['master']):
         back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_master')
@@ -253,10 +239,12 @@ def choose_time(message, date=None, master_id=None):
     dialogue_text = print_booking_text(user_data)
     dialogue_text += 'Выберите доступное время:'
     markup = types.InlineKeyboardMarkup(row_width=4)
+    
     buttons = []
     date_for_sql_query = restoring_user_date_for_sql_query(date)
     for item in get_free_time(master_id=user_data['master']['id'], appointment_date=date_for_sql_query):
         buttons.append(types.InlineKeyboardButton(item, callback_data=f'confirmation#{item}'))
+
     for i in range(0, len(buttons), 4):
         markup.add(*buttons[i:i + 4])
     markup.row(types.InlineKeyboardButton('<< Назад', callback_data='re_choose_date#cut_date'))
