@@ -35,9 +35,9 @@ EMPTY_CACHE = {
     'last_message_id': False
     }
 
-TIMES = get_free_time
-MASTERS = get_masters_name_from_base
-SERVICES = get_services_from_base
+times = get_free_time
+masters = get_masters_name_from_base()
+services = get_services_from_base()
 
 
 def print_booking_text(user_data, not_confirmed=True):
