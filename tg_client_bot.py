@@ -128,6 +128,8 @@ def callback_inline(call):
     if len(args) > 1:
         if args[1] == 'cut_date': user_data['date'] = False
         if args[1] == 'cut_time': user_data['time'] = False
+        if args[1] == 'cut_master': user_data['master'] = False
+        if args[1] == 'cu_procedure': user_data['procedure'] = False
         if args[1] == 'cut_phone':
             user_data['phone'] = False
             user_data['time'] = False
@@ -169,7 +171,7 @@ def choose_master(message):
     markup = types.InlineKeyboardMarkup(row_width=3)
     for i in range(0, len(buttons), 3):
         markup.add(*buttons[i:i+3])
-    markup.row(types.InlineKeyboardButton('<< Назад', callback_data='main_menu'))
+    markup.row(types.InlineKeyboardButton('<< Назад', callback_data='main_menu#cut_master'))
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
@@ -181,7 +183,7 @@ def choose_procedure(message):
             text=f'{item["title"]} - {item["price"]}р.',
             callback_data=f'procedure#{item["id"]}'
             ))
-    markup.add(types.InlineKeyboardButton('<< Назад', callback_data='main_menu'))
+    markup.add(types.InlineKeyboardButton('<< Назад', callback_data='main_menu#cut_procedure'))
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
@@ -190,11 +192,13 @@ def choose_date(message, master=None, procedure=None):
     user_data = bot.__dict__['users'][message.chat.id]
     if master:
         user_data.update({'master': get_masters_name_from_base()[master]})
+        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_master')
     else:
         master = user_data['master']
 
     if procedure:
         user_data.update({'procedure': get_services_from_base()[procedure]})
+        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_procedure')
     else:
         procedure = user_data['procedure']
 
@@ -214,7 +218,8 @@ def choose_date(message, master=None, procedure=None):
     markup = types.InlineKeyboardMarkup(row_width=3)
     for i in range(0, len(buttons), 3):
         markup.add(*buttons[i:i+3])
-    markup.row(types.InlineKeyboardButton('<< Назад', callback_data='choose_master'))
+
+    markup.row(back_button)
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
