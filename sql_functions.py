@@ -114,3 +114,11 @@ def get_free_time(master_id, appointment_date):
         if occupied_time in all_appointment_time:
             all_appointment_time.remove(occupied_time)
     return all_appointment_time
+
+
+def restoring_user_date_for_sql_query(clients_date):
+    cut_day = clients_date[0:2]
+    cut_month = clients_date[3:5]
+    year = datetime.date.today().year
+    real_date_for_sql = f'{year}-{cut_month}-{cut_day}'
+    return real_date_for_sql

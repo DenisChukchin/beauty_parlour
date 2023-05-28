@@ -12,6 +12,7 @@ from sql_functions import (
     get_services_from_base,
     get_free_time,
     registration_new_appointment,
+    restoring_user_date_for_sql_query
 )
 
 import logging
@@ -36,9 +37,6 @@ EMPTY_CACHE = {
     }
 
 times = get_free_time
-masters = get_masters_name_from_base()
-services = get_services_from_base()
-
 
 def print_booking_text(user_data, not_confirmed=True):
 
@@ -49,7 +47,7 @@ def print_booking_text(user_data, not_confirmed=True):
         dialogue_text += '===============================' + '\n\n'
 
     if user_data["procedure"]:
-        dialogue_text += f'Сервис: {user_data["procedure"]["title"]}' + '\n'
+        dialogue_text += f'Сервис: {user_data["procedure"]["title"]} - {user_data["procedure"]["price"]}р.' + '\n'
     if user_data["master"]:
         dialogue_text += f'Мастер: {user_data["master"]["name"]}' + '\n'
         # dialogue_text += 'Услуга: {}' + '\n'
@@ -74,7 +72,17 @@ def start_menu(message):
     bot.send_message(message.chat.id, 'Добро пожаловать в BeautyCity!!!', reply_markup=markup)
     bot.register_next_step_handler(message, call_us)
 
-    bot.__dict__['users'].update({message.chat.id: EMPTY_CACHE})
+    bot.__dict__['users'].update({
+        message.chat.id: {
+            'first_time': True,
+            'office': False,
+            'master': False,
+            'procedure': False,
+            'date': False,
+            'time': False,
+            'phone': False,
+            'last_message_id': False
+            }})
     user_data = bot.__dict__['users'][message.chat.id]
     user__in_db = sql_get_user_data(message.chat.id)
     if user__in_db:
@@ -134,9 +142,9 @@ def callback_inline(call):
             user_data['phone'] = False
             user_data['time'] = False
 
-    if call.data == 'main_menu': main_menu(call.message)
     if call.data == 'about':about(call.message)
     if call.data == 'choose_master': choose_master(call.message)
+    if call.data.startswith('main_menu'): main_menu(call.message)
     if call.data.startswith('master'): choose_date(call.message, master=int(args[1]))
     if call.data.startswith('re_choose_date'): choose_date(call.message)
     if call.data.startswith('choose_time'): choose_time(call.message, args[1])
@@ -192,15 +200,19 @@ def choose_date(message, master=None, procedure=None):
     user_data = bot.__dict__['users'][message.chat.id]
     if master:
         user_data.update({'master': get_masters_name_from_base()[master]})
-        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_master')
     else:
         master = user_data['master']
 
     if procedure:
         user_data.update({'procedure': get_services_from_base()[procedure]})
-        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_procedure')
     else:
         procedure = user_data['procedure']
+
+    if (user_data['master']):
+        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_master')
+    else:
+        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_procedure')
+
 
     buttons = []
     days = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
@@ -236,7 +248,8 @@ def choose_time(message, date=None):
 
     markup = types.InlineKeyboardMarkup(row_width=4)
     buttons = []
-    for item in TIMES:
+    date_for_sql_query = restoring_user_date_for_sql_query(date)
+    for item in get_free_time(master_id=user_data['master']['id'], appointment_date=date_for_sql_query):
         buttons.append(types.InlineKeyboardButton(item, callback_data=f'confirmation#{item}'))
 
     for i in range(0, len(buttons), 4):
