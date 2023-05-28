@@ -1,5 +1,6 @@
+from datetime import datetime, time, timedelta, date
 import sqlite3
-import datetime
+from tkinter import StringVar
 
 BASE = 'db.sqlite3'
 
@@ -7,7 +8,7 @@ BASE = 'db.sqlite3'
 def sql_register_new_user(tg_id, name, phone):
     conn = sqlite3.connect(BASE)
     cur = conn.cursor()
-    time_create = datetime.datetime.now()
+    time_create = datetime.now()
     exec_text = f"""
         INSERT INTO 'service_client' (name, phonenumber, user_id, time_create)
         VALUES ('{name}','{phone}','{tg_id}','{time_create}')
@@ -18,7 +19,6 @@ def sql_register_new_user(tg_id, name, phone):
 
 
 def sql_get_user_data(tg_id) -> dict:
-
     conn = sqlite3.connect(BASE)
     cur = conn.cursor()
     exec_text = f"SELECT * FROM 'service_client' WHERE user_id is '{tg_id}'"
@@ -34,7 +34,7 @@ def sql_get_user_data(tg_id) -> dict:
         'name': result[1],
         'phone': result[2],
         'tg_id': result[4],
-        }
+    }
     return formated_result
 
 
@@ -50,43 +50,60 @@ def sql_put_user_phone(tg_id, phone):
 def registration_new_appointment(meet_date, meet_time, tg_id, master_id, service_id):
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
-    time_create = datetime.datetime.now()
-    appointment_information = [
-        (meet_date, meet_time, time_create, tg_id, master_id, service_id)
-    ]
-    cursor.executemany('''
-                       INSERT INTO 'service_appointment' 
-                       (appointment_date, appointment_time,
-                       time_create, client_id, master_id, service_id)
-                       VALUES (?,?,?,?,?,?)''', appointment_information)
-
+    time_create = datetime.now()
+    appointment_information = (meet_date, meet_time, tg_id, master_id, service_id)
+    cursor.execute(
+        "INSERT INTO service_appointment (appointment_date, appointment_time, client_id, master_id, service_id, time_create) VALUES (?, ?, ?, ?, ?, ?)",
+        appointment_information + (time_create,))
     connection.commit()
     connection.close()
+
+
 
 
 def get_masters_name_from_base():
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
-    all_masters = cursor.execute("SELECT * FROM service_master")
+    all_masters = cursor.execute("SELECT name FROM service_master")
     masters = cursor.fetchall()
-    masters_details = {}
+    masters_details = []
     for master in masters:
         masters_id = master[0]
-        masters_details[masters_id] = \
-            {all_masters.description[i][0]: master[i] for i in range(len(master))}
+        masters_details.append(masters_id)
     connection.close()
     return masters_details
 
 
 def get_services_from_base():
-    connection = sqlite3.connect(BASE)
-    cursor = connection.cursor()
-    all_services = cursor.execute("SELECT * FROM service_service")
-    services = cursor.fetchall()
-    masters_details = {}
-    for service in services:
-        services_id = service[0]
-        masters_details[services_id] = \
-            {all_services.description[i][0]: service[i] for i in range(len(service))}
-    connection.close()
-    return masters_details
+    conn = sqlite3.connect(BASE)
+    cur = conn.cursor()
+    cur.execute("SELECT title FROM service_service")
+    procedures = cur.fetchall()
+    buttons = []
+    for procedure in procedures:
+        procedure_name = procedure[0]
+        buttons.append(procedure_name)
+    cur.close()
+    conn.close()
+    return buttons
+
+
+def get_available_slots():
+    conn = sqlite3.connect(BASE)
+    cur = conn.cursor()
+    today = datetime.now().date()
+    cur.execute("SELECT appointment_time FROM service_appointment WHERE appointment_date >= ?", (today,))
+    slots = cur.fetchall()
+    conn.close()
+    return [slot[0] for slot in slots]
+
+
+def get_available_times(date):
+    conn = sqlite3.connect(BASE)
+    cur = conn.cursor()
+    date_obj = datetime.strptime(date, '%d.%m').date()
+    cur.execute("SELECT appointment_time FROM service_appointment WHERE date = ?", (date_obj,))
+    available_times = cur.fetchall()
+    conn.close()
+    available_times = [time[0] for time in available_times]
+    return available_times
