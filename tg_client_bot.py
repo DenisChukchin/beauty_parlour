@@ -218,13 +218,12 @@ def choose_date(message, master=None, procedure=None):
         procedure = user_data.get('procedure')
 
     buttons = []
-    days = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
     today = datetime.datetime.now().date()
     days_to_end_of_next_week = 14 - today.weekday()
 
     for i in range(days_to_end_of_next_week):
         new_date = today + datetime.timedelta(days=i)
-        formatted_date = f"{new_date.day:02d}.{new_date.month:02d} ({days[new_date.weekday()]})"
+        formatted_date = f"{new_date.day:02d}-{new_date.month:02d}-{new_date.year}"
         buttons.append(types.InlineKeyboardButton(formatted_date, callback_data=f'choose_time#{formatted_date}'))
 
     dialogue_text = print_booking_text(user_data)
@@ -235,6 +234,9 @@ def choose_date(message, master=None, procedure=None):
         markup.add(*buttons[i:i + 3])
     markup.row(types.InlineKeyboardButton('<< Назад', callback_data='choose_master'))
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
+
+
+
 
 
 def choose_time(message, date=None, master_id=None):
