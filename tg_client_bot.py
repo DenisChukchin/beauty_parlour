@@ -3,17 +3,16 @@ import datetime
 import telebot
 from telebot import types
 from environs import Env
-import tkinter as tk
-
 
 
 from sql_functions import (
     sql_get_user_data,
     sql_register_new_user,
     sql_put_user_phone,
-    registration_new_appointment,
     get_masters_name_from_base,
-    get_services_from_base
+    get_services_from_base,
+    get_free_time,
+    registration_new_appointment,
 )
 
 import logging
@@ -38,22 +37,9 @@ EMPTY_CACHE = {
     'last_message_id': False
 }
 
-TIMES = [
-    '10:00', '10:30',
-    '11:00', '11:30',
-    '12:00', '12:30',
-    '13:00', '13:30',
-    '14:00', '14:30',
-    '15:00', '15:30',
-    '16:00', '16:30',
-    '17:00', '17:30',
-    '18:00', '18:30',
-    '19:00', '19:30',
-    '20:00', '20:30'
-]
-
-MASTERS = get_masters_name_from_base()
-SERVICES = get_services_from_base()
+TIMES = get_free_time
+MASTERS = get_masters_name_from_base
+SERVICES = get_services_from_base
 
 
 def print_booking_text(user_data, not_confirmed=True):
