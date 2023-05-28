@@ -106,9 +106,9 @@ def get_free_time(master_id, appointment_date):
                    f"AND appointment_date ='{appointment_date}' "
                    f"AND appointment_time NOT NULL")
     free_time = cursor.fetchall()
+    connection.close()
     for x in free_time:
         occupied_time = x[0]
         if occupied_time in all_appointment_time:
             all_appointment_time.remove(occupied_time)
-    connection.close()
     return all_appointment_time
