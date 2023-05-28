@@ -50,9 +50,9 @@ def print_booking_text(user_data, not_confirmed=True):
         dialogue_text = 'Поздравляем с успешной записью!' + '\n'
         dialogue_text += '===============================' + '\n\n'
 
-    if user_data["procedure"]:
-        dialogue_text += f'Сервис: {user_data["procedure"]}' + '\n'
-    if user_data["master"]:
+    if user_data["title"]:
+        dialogue_text += f'Сервис: {user_data["title"]}' + '\n'
+    if user_data["master"]
         dialogue_text += f'Мастер: {user_data["master"]}' + '\n'
         dialogue_text += f'Услуга: {user_data["procedure"]}' + '\n'
     if user_data["date"]:
@@ -201,7 +201,6 @@ def choose_procedure(message):
 
     button_back = types.InlineKeyboardButton('<< Назад', callback_data='main_menu')
     markup.add(*buttons, button_back)
-
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
