@@ -215,13 +215,9 @@ def choose_date(message, master=None, procedure=None):
 
     markup = types.InlineKeyboardMarkup(row_width=3)
     for i in range(0, len(buttons), 3):
-        markup.add(*buttons[i:i+3])
-
-    markup.row(back_button)
+        markup.add(*buttons[i:i + 3])
+    markup.row(types.InlineKeyboardButton('<< Назад', callback_data='choose_master'))
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
-
-
-
 
 
 def choose_time(message, date=None, master_id=None):
@@ -234,7 +230,8 @@ def choose_time(message, date=None, master_id=None):
     dialogue_text += 'Выберите доступное время:'
     markup = types.InlineKeyboardMarkup(row_width=4)
     buttons = []
-    for item in get_free_time(master_id, date):
+    free_time = get_free_time(user_data["master"]["id"], user_data['date'])
+    for item in free_time:
         buttons.append(types.InlineKeyboardButton(item, callback_data=f'confirmation#{item}'))
     for i in range(0, len(buttons), 4):
         markup.add(*buttons[i:i + 4])
@@ -289,7 +286,6 @@ def successful_booking(call, tg_id):
     user_data['last_message_id'] = message.message_id
     registration_new_appointment(user_data.get('date'), user_data.get('time'), tg_id, user_data.get('master'), user_data.get('procedure'))
     start_menu(call)
-
 
 
 # Добавление кнопки "позвонить нам" в ReplyKeyboardMarkup
