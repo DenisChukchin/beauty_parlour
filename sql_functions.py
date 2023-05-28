@@ -1,5 +1,5 @@
+from datetime import datetime, time, timedelta, date
 import sqlite3
-import datetime
 
 BASE = 'db.sqlite3'
 
@@ -7,7 +7,7 @@ BASE = 'db.sqlite3'
 def sql_register_new_user(tg_id, name, phone):
     conn = sqlite3.connect(BASE)
     cur = conn.cursor()
-    time_create = datetime.datetime.now()
+    time_create = datetime.now()
     exec_text = f"""
         INSERT INTO 'service_client' (name, phonenumber, user_id, time_create)
         VALUES ('{name}','{phone}','{tg_id}','{time_create}')
@@ -18,7 +18,6 @@ def sql_register_new_user(tg_id, name, phone):
 
 
 def sql_get_user_data(tg_id) -> dict:
-
     conn = sqlite3.connect(BASE)
     cur = conn.cursor()
     exec_text = f"SELECT * FROM 'service_client' WHERE user_id is '{tg_id}'"
@@ -34,7 +33,7 @@ def sql_get_user_data(tg_id) -> dict:
         'name': result[1],
         'phone': result[2],
         'tg_id': result[4],
-        }
+    }
     return formated_result
 
 
@@ -50,7 +49,7 @@ def sql_put_user_phone(tg_id, phone):
 def registration_new_appointment(meet_date, meet_time, tg_id, master_id, service_id):
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
-    time_create = datetime.datetime.now()
+    time_create = datetime.now()
     appointment_information = [
         (meet_date, meet_time, time_create, tg_id, master_id, service_id)
     ]
@@ -64,17 +63,19 @@ def registration_new_appointment(meet_date, meet_time, tg_id, master_id, service
     connection.close()
 
 
+
+
 def get_masters_name_from_base():
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
-    all_masters = cursor.execute("SELECT * FROM service_master")
+    all_masters = cursor.execute("SELECT name FROM service_master")
     masters = cursor.fetchall()
-    connection.close()
-    masters_details = {}
+
+    masters_details = []
     for master in masters:
         masters_id = master[0]
-        masters_details[masters_id] = \
-            {all_masters.description[i][0]: master[i] for i in range(len(master))}
+        masters_details.append(masters_id)
+    connection.close()
     return masters_details
 
 
@@ -101,10 +102,8 @@ def get_free_time(master_id, appointment_date):
     ]
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
-    cursor.execute(f"SELECT appointment_time FROM service_appointment "
-                   f"WHERE master_id='{master_id}' "
-                   f"AND appointment_date ='{appointment_date}' "
-                   f"AND appointment_time NOT NULL")
+    cursor.execute(f'SELECT appointment_time FROM service_appointment WHERE master_id=\'{master_id}\' AND '
+                   f'appointment_date=\'{appointment_date}\' AND appointment_time NOT NULL')
     free_time = cursor.fetchall()
     connection.close()
     for x in free_time:
