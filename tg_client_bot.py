@@ -1,5 +1,7 @@
 import time
 import datetime
+from pprint import pprint
+
 import telebot
 from telebot import types
 from environs import Env
@@ -37,9 +39,8 @@ EMPTY_CACHE = {
     'last_message_id': False
 }
 
-TIMES = get_free_time
-MASTERS = get_masters_name_from_base
-SERVICES = get_services_from_base
+MASTERS = get_masters_name_from_base()
+SERVICES = get_services_from_base()
 
 
 def print_booking_text(user_data, not_confirmed=True):
@@ -58,9 +59,7 @@ def print_booking_text(user_data, not_confirmed=True):
         dialogue_text += f'Дата: {user_data["date"]}' + '\n'
     if user_data["time"]:
         dialogue_text += f'Время: {user_data["time"]}' + '\n'
-
     dialogue_text += '\n'
-
     return dialogue_text
 
 
@@ -145,7 +144,7 @@ def callback_inline(call):
     elif call.data.startswith('re_choose_date'):
         choose_date(call.message)
     elif call.data.startswith('choose_time'):
-        choose_time(call.message, date=args[1])  # Pass the date as a string
+        choose_time(call.message, date=args[1], master_id=args[1])  # Pass the date as a string
     elif call.data.startswith('re_choose_time'):
         choose_time(call.message)
     elif call.data.startswith('confirmation'):
@@ -158,8 +157,7 @@ def callback_inline(call):
         tg_id = call.message.chat.id
         master_id = call.message.text.split('\n')[3].split(':')[1].strip()
         service_id = call.message.text.split('\n')[4].split(':')[1].strip()
-        successful_booking(call.message, meet_date, meet_time, tg_id, master_id, service_id)
-        print(successful_booking(call.message, meet_date, meet_time, tg_id, master_id, service_id))
+        successful_booking(call.message, tg_id)
 
     elif call.data == 'choose_procedure':
         choose_procedure(call.message)
@@ -239,7 +237,7 @@ def choose_date(message, master=None, procedure=None):
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
-def choose_time(message, date=None):
+def choose_time(message, date=None, master_id=None):
     user_data = bot.__dict__['users'][message.chat.id]
     if date:
         user_data.update({'date': date})
@@ -249,7 +247,7 @@ def choose_time(message, date=None):
     dialogue_text += 'Выберите доступное время:'
     markup = types.InlineKeyboardMarkup(row_width=4)
     buttons = []
-    for item in TIMES:
+    for item in get_free_time(master_id, date):
         buttons.append(types.InlineKeyboardButton(item, callback_data=f'confirmation#{item}'))
     for i in range(0, len(buttons), 4):
         markup.add(*buttons[i:i + 4])
@@ -286,7 +284,7 @@ def confirmation(message, time=None):
         bot.register_next_step_handler(message, get_phone)
 
 
-def successful_booking(call, meet_date, meet_time, tg_id, master_id, service_id):
+def successful_booking(call, tg_id):
     user_data = bot.__dict__['users'][call.chat.id]
     user_data['waiting_for_phone'] = False
     if user_data['first_time']:
@@ -302,7 +300,7 @@ def successful_booking(call, meet_date, meet_time, tg_id, master_id, service_id)
     message = bot.send_message(call.chat.id, dialogue_text)
     bot.delete_message(call.chat.id, user_data['last_message_id'])
     user_data['last_message_id'] = message.message_id
-    registration_new_appointment(meet_date, meet_time, tg_id, master_id, service_id)
+    registration_new_appointment(user_data.get('date'), user_data.get('time'), tg_id, user_data.get('master'), user_data.get('procedure'))
     start_menu(call)
 
 

@@ -1,6 +1,5 @@
 from datetime import datetime, time, timedelta, date
 import sqlite3
-from tkinter import StringVar
 
 BASE = 'db.sqlite3'
 
@@ -50,7 +49,7 @@ def sql_put_user_phone(tg_id, phone):
 def registration_new_appointment(meet_date, meet_time, tg_id, master_id, service_id):
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
-    time_create = datetime.datetime.now()
+    time_create = datetime.now()
     appointment_information = [
         (meet_date, meet_time, time_create, tg_id, master_id, service_id)
     ]
@@ -103,10 +102,8 @@ def get_free_time(master_id, appointment_date):
     ]
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
-    cursor.execute(f"SELECT appointment_time FROM service_appointment "
-                   f"WHERE master_id='{master_id}' "
-                   f"AND appointment_date ='{appointment_date}' "
-                   f"AND appointment_time NOT NULL")
+    cursor.execute(f'SELECT appointment_time FROM service_appointment WHERE master_id=\'{master_id}\' AND '
+                   f'appointment_date=\'{appointment_date}\' AND appointment_time NOT NULL')
     free_time = cursor.fetchall()
     connection.close()
     for x in free_time:
