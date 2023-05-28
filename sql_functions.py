@@ -53,6 +53,8 @@ def registration_new_appointment(meet_date, meet_time, tg_id, master_id, service
     appointment_information = [
         (meet_date, meet_time, time_create, tg_id, master_id, service_id)
     ]
+
+
     cursor.executemany('''
                        INSERT INTO service_appointment 
                        (appointment_date, appointment_time,

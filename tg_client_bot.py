@@ -50,11 +50,12 @@ def print_booking_text(user_data, not_confirmed=True):
         dialogue_text = 'Поздравляем с успешной записью!' + '\n'
         dialogue_text += '===============================' + '\n\n'
 
-    if user_data["title"]:
-        dialogue_text += f'Сервис: {user_data["title"]}' + '\n'
-    if user_data["master"]
-        dialogue_text += f'Мастер: {user_data["master"]}' + '\n'
-        dialogue_text += f'Услуга: {user_data["procedure"]}' + '\n'
+    if user_data["procedure"]:
+        dialogue_text += f'Сервис: {user_data["procedure"]["title"]}' + '\n'
+    if user_data["master"]:
+        dialogue_text += f'Мастер: {user_data["master"]["name"]}' + '\n'
+        # dialogue_text += 'Услуга: {}' + '\n'
+
     if user_data["date"]:
         dialogue_text += f'Дата: {user_data["date"]}' + '\n'
     if user_data["time"]:
@@ -125,44 +126,27 @@ def callback_inline(call):
     user_data = bot.__dict__.get('users', {}).get(call.message.chat.id, EMPTY_CACHE)
     args = call.data.split('#')
     if len(args) > 1:
-        if args[1] == 'cut_date':
-            user_data['date'] = False
-        if args[1] == 'cut_time':
-            user_data['time'] = False
+        if args[1] == 'cut_date': user_data['date'] = False
+        if args[1] == 'cut_time': user_data['time'] = False
+        if args[1] == 'cut_master': user_data['master'] = False
+        if args[1] == 'cu_procedure': user_data['procedure'] = False
         if args[1] == 'cut_phone':
             user_data['phone'] = False
             user_data['time'] = False
 
-    if call.data == 'main_menu':
-        main_menu(call.message)
-    elif call.data == 'about':
-        about(call.message)
-    elif call.data == 'choose_master':
-        choose_master(call.message)
-    elif call.data.startswith('master'):
-        choose_date(call.message, master=args[1])  # Pass the master as a string
-    elif call.data.startswith('re_choose_date'):
-        choose_date(call.message)
-    elif call.data.startswith('choose_time'):
-        choose_time(call.message, date=args[1], master_id=args[1])  # Pass the date as a string
-    elif call.data.startswith('re_choose_time'):
-        choose_time(call.message)
-    elif call.data.startswith('confirmation'):
-        confirmation(call.message, args[1])
+    if call.data == 'main_menu': main_menu(call.message)
+    if call.data == 'about':about(call.message)
+    if call.data == 'choose_master': choose_master(call.message)
+    if call.data.startswith('master'): choose_date(call.message, master=int(args[1]))
+    if call.data.startswith('re_choose_date'): choose_date(call.message)
+    if call.data.startswith('choose_time'): choose_time(call.message, args[1])
+    if call.data.startswith('re_choose_time'): choose_time(call.message)
+    if call.data.startswith('confirmation'): confirmation(call.message, args[1])
 
-    elif call.data.startswith('successful_booking'):
-        lines = call.message.text.split('\n')
-        meet_date = lines[2].split(':')[1].strip()
-        meet_time = call.message.text.split('\n')[2].split(':')[1].strip()
-        tg_id = call.message.chat.id
-        master_id = call.message.text.split('\n')[3].split(':')[1].strip()
-        service_id = call.message.text.split('\n')[4].split(':')[1].strip()
-        successful_booking(call.message, tg_id)
+    if call.data.startswith('successful_booking'): successful_booking(call.message)
 
-    elif call.data == 'choose_procedure':
-        choose_procedure(call.message)
-    elif call.data.startswith('procedure'):
-        choose_date(call.message, procedure=args[1])
+    if call.data == 'choose_procedure': choose_procedure(call.message)
+    if call.data.startswith('procedure'): choose_date(call.message, procedure=int(args[1]))
 
 
 def about(message):
@@ -180,39 +164,40 @@ def about(message):
 
 def choose_master(message):
     dialogue_text = 'Выберите мастера:'
-    markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = []
-    for master in MASTERS:
-        button = types.InlineKeyboardButton(master, callback_data=f'master#{master}')
-        buttons.append(button)
-    button_back = types.InlineKeyboardButton('<< Назад', callback_data='main_menu')
-    markup.add(*buttons, button_back)
+    for item in get_masters_name_from_base().values():
+        buttons.append(types.InlineKeyboardButton(text=item['name'], callback_data=f'master#{item["id"]}'))
+
+    markup = types.InlineKeyboardMarkup(row_width=3)
+    for i in range(0, len(buttons), 3):
+        markup.add(*buttons[i:i+3])
+    markup.row(types.InlineKeyboardButton('<< Назад', callback_data='main_menu#cut_master'))
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
 def choose_procedure(message):
     dialogue_text = 'Выберите процедуру:'
-    markup = types.InlineKeyboardMarkup(row_width=2)
-
-    buttons = []
-    for service in SERVICES:
-        button = types.InlineKeyboardButton(service, callback_data=f'procedure#{service}')
-        buttons.append(button)
-
-    button_back = types.InlineKeyboardButton('<< Назад', callback_data='main_menu')
-    markup.add(*buttons, button_back)
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    for item in get_services_from_base().values():
+        markup.add(types.InlineKeyboardButton(
+            text=f'{item["title"]} - {item["price"]}р.',
+            callback_data=f'procedure#{item["id"]}'
+            ))
+    markup.add(types.InlineKeyboardButton('<< Назад', callback_data='main_menu#cut_procedure'))
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
 def choose_date(message, master=None, procedure=None):
     user_data = bot.__dict__['users'][message.chat.id]
     if master:
-        user_data.update({'master': master})
+        user_data.update({'master': get_masters_name_from_base()[master]})
+        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_master')
     else:
         master = user_data.get('master')
 
     if procedure:
-        user_data.update({'procedure': procedure})
+        user_data.update({'procedure': get_services_from_base()[procedure]})
+        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_procedure')
     else:
         procedure = user_data.get('procedure')
 
@@ -230,8 +215,9 @@ def choose_date(message, master=None, procedure=None):
 
     markup = types.InlineKeyboardMarkup(row_width=3)
     for i in range(0, len(buttons), 3):
-        markup.add(*buttons[i:i + 3])
-    markup.row(types.InlineKeyboardButton('<< Назад', callback_data='choose_master'))
+        markup.add(*buttons[i:i+3])
+
+    markup.row(back_button)
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
