@@ -51,9 +51,10 @@ def print_booking_text(user_data, not_confirmed=True):
         dialogue_text += '===============================' + '\n\n'
 
     if user_data["procedure"]:
-        dialogue_text += f'Сервис: {user_data["procedure"]["title"]}' + '\n'
+        dialogue_text += f'Сервис: {SERVICES[user_data["procedure"]]["title"]}' + '\n'
     if user_data["master"]:
-        dialogue_text += f'Мастер: {user_data["master"]["name"]}' + '\n'
+        dialogue_text += f'Мастер: {MASTERS[user_data["master"]]["name"]}' + '\n'
+        # dialogue_text += f'Мастер: {MASTERS[user_data["master"]]["id"]}' + '\n'
         # dialogue_text += 'Услуга: {}' + '\n'
 
     if user_data["date"]:
@@ -188,26 +189,26 @@ def choose_procedure(message):
 
 
 def choose_date(message, master=None, procedure=None):
+
     user_data = bot.__dict__['users'][message.chat.id]
     if master:
-        user_data.update({'master': get_masters_name_from_base()[master]})
-        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_master')
+        user_data.update({'master': master})
     else:
-        master = user_data.get('master')
+        master = user_data['master']
 
     if procedure:
-        user_data.update({'procedure': get_services_from_base()[procedure]})
-        back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_procedure')
+        user_data.update({'procedure': procedure})
     else:
-        procedure = user_data.get('procedure')
+        procedure = user_data['procedure']
 
     buttons = []
+    days = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
     today = datetime.datetime.now().date()
     days_to_end_of_next_week = 14 - today.weekday()
 
     for i in range(days_to_end_of_next_week):
         new_date = today + datetime.timedelta(days=i)
-        formatted_date = f"{new_date.day:02d}-{new_date.month:02d}-{new_date.year}"
+        formatted_date = f"{new_date.day:02d}.{new_date.month:02d} ({days[new_date.weekday()]})"
         buttons.append(types.InlineKeyboardButton(formatted_date, callback_data=f'choose_time#{formatted_date}'))
 
     dialogue_text = print_booking_text(user_data)
@@ -215,7 +216,7 @@ def choose_date(message, master=None, procedure=None):
 
     markup = types.InlineKeyboardMarkup(row_width=3)
     for i in range(0, len(buttons), 3):
-        markup.add(*buttons[i:i + 3])
+        markup.add(*buttons[i:i+3])
     markup.row(types.InlineKeyboardButton('<< Назад', callback_data='choose_master'))
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
@@ -230,7 +231,7 @@ def choose_time(message, date=None, master_id=None):
     dialogue_text += 'Выберите доступное время:'
     markup = types.InlineKeyboardMarkup(row_width=4)
     buttons = []
-    free_time = get_free_time(user_data["master"]["id"], user_data['date'])
+    free_time = get_free_time(user_data["master"], user_data['date'])
     for item in free_time:
         buttons.append(types.InlineKeyboardButton(item, callback_data=f'confirmation#{item}'))
     for i in range(0, len(buttons), 4):
