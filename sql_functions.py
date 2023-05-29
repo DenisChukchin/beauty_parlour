@@ -122,7 +122,7 @@ def restoring_user_date_for_sql_query(client_date):
     return real_date_for_sql
 
 
-def get_free_time(client_date, master_id=False, procedure_id=False):
+def get_free_time_for_master(client_date, master_id):
     appointment_date = restoring_user_date_for_sql_query(client_date)
     all_appointment_time = [
         '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00',
@@ -130,13 +130,35 @@ def get_free_time(client_date, master_id=False, procedure_id=False):
         '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00',
         '20:30'
     ]
-    sql_filter = f"master_id={master_id}" if master_id else f"service_id={procedure_id}"
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
     cursor.execute(f"SELECT appointment_time FROM service_appointment "
-                   f"WHERE {sql_filter} "
+                   f"WHERE master_id={master_id} "
                    f"AND appointment_date ='{appointment_date}' "
                    f"AND appointment_time NOT NULL")
+    free_time = cursor.fetchall()
+    connection.close()
+    for x in free_time:
+        occupied_time = x[0]
+        if occupied_time in all_appointment_time:
+            all_appointment_time.remove(occupied_time)
+    return all_appointment_time
+
+
+def get_free_time_for_procedure(client_date):
+    appointment_date = restoring_user_date_for_sql_query(client_date)
+    all_appointment_time = [
+        '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00',
+        '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+        '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00',
+        '20:30'
+    ]
+    connection = sqlite3.connect(BASE)
+    cursor = connection.cursor()
+    cursor.execute(f"""SELECT appointment_time FROM service_appointment
+                       WHERE appointment_date='{appointment_date}'
+                       GROUP BY appointment_time
+                       HAVING COUNT(appointment_date)>1""""")
     free_time = cursor.fetchall()
     connection.close()
     for x in free_time:

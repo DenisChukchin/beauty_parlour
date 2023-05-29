@@ -15,7 +15,8 @@ from sql_functions import (
     sql_add_feedback,
     get_masters_name_from_base,
     get_services_from_base,
-    get_free_time,
+    get_free_time_for_master,
+    get_free_time_for_procedure,
     get_past_appointment,
     registration_new_appointment,
     restoring_user_date_for_sql_query,
@@ -257,9 +258,9 @@ def choose_time(message, date=None):
     buttons = []
 
     if user_data['master']:
-        free_time = get_free_time(client_date=date, master_id=user_data['master']['id'])
+        free_time = get_free_time_for_master(client_date=date, master_id=user_data['master']['id'])
     else:
-        free_time = get_free_time(client_date=date, procedure_id=user_data['procedure']['id'])
+        free_time = get_free_time_for_procedure(client_date=date)
 
     for item in free_time:
         buttons.append(types.InlineKeyboardButton(item, callback_data=f'confirmation#{item}'))
