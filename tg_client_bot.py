@@ -63,7 +63,7 @@ def start_menu(message):
 
     bot.__dict__['users'].update({
         message.chat.id: {
-            'user_id': sql_get_user_data(message.chat.id)['id'],
+            'user_id': sql_get_user_data(message.chat.id),
             'first_time': True,
             'office': False,
             'master': False,
@@ -92,7 +92,7 @@ def start_menu(message):
     choose_master_button = types.InlineKeyboardButton("Выбор мастера", callback_data='choose_master')
     choose_procedure_button = types.InlineKeyboardButton("Выбор процедуры", callback_data='choose_procedure')
     markup_inline.add(about_button, choose_master_button, choose_procedure_button)
-    if get_past_appointment(user_data['user_id']):
+    if user_data['user_id'] and get_past_appointment(user_data['user_id']['id']):
         markup_inline.add(types.InlineKeyboardButton("Оставить отзыв", callback_data='send_feedback'))
     bot.send_message(message.chat.id, dialogue_text, reply_markup=markup_inline)
 
@@ -106,7 +106,7 @@ def main_menu(message):
     choose_procedure_button = types.InlineKeyboardButton("Выбор процедуры", callback_data='choose_procedure')
 
     markup.add(about_button, choose_master_button, choose_procedure_button)
-    if get_past_appointment(user_data['user_id']):
+    if user_data['user_id'] and get_past_appointment(user_data['user_id']['id']):
         markup.add(types.InlineKeyboardButton("Оставить отзыв", callback_data='send_feedback'))
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
@@ -383,8 +383,8 @@ def add_feedback_to_db(message):
 
     bot.send_message(message.chat.id, dialogue_text)
     sql_add_feedback(
-        get_past_appointment(user_data['user_id']),
-        user_data['user_id'],
+        get_past_appointment(user_data['user_id']['id']),
+        user_data['user_id']['id'],
         message.text
         )
     time.sleep(3)

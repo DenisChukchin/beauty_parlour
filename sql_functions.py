@@ -12,7 +12,10 @@ def sql_register_new_user(tg_id, name, phone):
     time_create = datetime.datetime.now()
 
     # Создать нового пользователя Django
-    user = User.objects.create_user(username=str(tg_id))
+    try:
+        user = User.objects.get(username=str(tg_id))
+    except User.DoesNotExist:
+        user = User.objects.create_user(username=str(tg_id))
 
     # Создать новый объект Client
     client = Client(
