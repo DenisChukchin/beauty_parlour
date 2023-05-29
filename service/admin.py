@@ -1,6 +1,8 @@
 from django.contrib import admin
-
-from .models import Saloon, Service, Category, Master, Client, Appointment
+from .models import (
+    Saloon, Service, Category, Master, Client, Appointment,
+    Feedback
+    )
 
 
 class MasterInLine(admin.TabularInline):
@@ -55,3 +57,10 @@ class AppointmentAdmin(admin.ModelAdmin):
         'client', 'master', 'service',
         'appointment_date', 'appointment_time', 'time_create'
     )
+
+@admin.register(Feedback)
+class FeedbackAdmin(admin.ModelAdmin):
+    list_display = ('client', 'appointment', 'feedback_text')
+    search_fields = ('client', 'feedback_text')
+    list_filter = ('appointment',)
+    ordering = ('appointment', 'client')

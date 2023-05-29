@@ -1,4 +1,7 @@
-from datetime import datetime
+from datetime import datetime, date
+from service.models import (
+    Appointment, Client, Master, Service, User, Feedback
+    )
 import datetime
 import sqlite3
 
@@ -6,22 +9,28 @@ BASE = 'db.sqlite3'
 
 
 def sql_register_new_user(tg_id, name, phone):
-    conn = sqlite3.connect(BASE)
-    cur = conn.cursor()
-    time_create = datetime.now()
-    exec_text = f"""
-        INSERT INTO 'service_client' (name, phonenumber, user_id, time_create)
-        VALUES ('{name}','{phone}','{tg_id}','{time_create}')
-        """
-    cur.execute(exec_text)
-    conn.commit()
-    conn.close()
+    time_create = datetime.datetime.now()
+
+    # Создать нового пользователя Django
+    user = User.objects.create_user(username=str(tg_id))
+
+    # Создать новый объект Client
+    client = Client(
+        user=user,
+        tg_id=tg_id,
+        name=name,
+        phonenumber=phone,
+        time_create=time_create
+    )
+
+    # Сохраняем объект Client в базе данных
+    client.save()
 
 
 def sql_get_user_data(tg_id) -> dict:
     conn = sqlite3.connect(BASE)
     cur = conn.cursor()
-    exec_text = f"SELECT * FROM 'service_client' WHERE user_id is '{tg_id}'"
+    exec_text = f"SELECT * FROM 'service_client' WHERE tg_id is '{tg_id}'"
     cur.execute(exec_text)
     result = cur.fetchone()
     conn.close()
@@ -33,7 +42,7 @@ def sql_get_user_data(tg_id) -> dict:
         'id': result[0],
         'name': result[1],
         'phone': result[2],
-        'tg_id': result[4],
+        'tg_id': result[5],
     }
     return formated_result
 
@@ -47,21 +56,31 @@ def sql_put_user_phone(tg_id, phone):
     conn.close()
 
 
-def registration_new_appointment(meet_date, meet_time, tg_id, master_id, service_id):
-    connection = sqlite3.connect(BASE)
-    cursor = connection.cursor()
-    time_create = datetime.now()
-    appointment_information = [
-        (meet_date, meet_time, time_create, tg_id, master_id, service_id)
-    ]
-    cursor.executemany('''
-                       INSERT INTO service_appointment 
-                       (appointment_date, appointment_time,
-                       time_create, client_id, master_id, service_id)
-                       VALUES (?,?,?,?,?,?)''', appointment_information)
+def registration_new_appointment(meet_date, meet_time, tg_id, master_id=False, service_id=False):
+    time_create = datetime.datetime.now()
 
-    connection.commit()
-    connection.close()
+    # Находим клиента по tg_id
+    client = Client.objects.get(tg_id=tg_id)
+
+    # Создаем новый объект Appointment
+    appointment = Appointment(
+        appointment_date=meet_date,
+        appointment_time=meet_time,
+        time_create=time_create,
+        client=client
+    )
+
+    if master_id:
+        # Находим мастера по master_id
+        master = Master.objects.get(id=master_id)
+        appointment.master = master
+    else:
+        # Находим услугу по service_id
+        service = Service.objects.get(id=service_id)
+        appointment.service = service
+
+    # Сохраняем объект Appointment в базе данных
+    appointment.save()
 
 
 def get_masters_name_from_base():
@@ -100,7 +119,7 @@ def restoring_user_date_for_sql_query(client_date):
     return real_date_for_sql
 
 
-def get_free_time(master_id, client_date):
+def get_free_time(client_date, master_id=False, procedure_id=False):
     appointment_date = restoring_user_date_for_sql_query(client_date)
     all_appointment_time = [
         '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00',
@@ -108,10 +127,11 @@ def get_free_time(master_id, client_date):
         '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00',
         '20:30'
     ]
+    sql_filter = f"master_id={master_id}" if master_id else f"service_id={procedure_id}"
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
     cursor.execute(f"SELECT appointment_time FROM service_appointment "
-                   f"WHERE master_id='{master_id}' "
+                   f"WHERE {sql_filter} "
                    f"AND appointment_date ='{appointment_date}' "
                    f"AND appointment_time NOT NULL")
     free_time = cursor.fetchall()
@@ -121,3 +141,29 @@ def get_free_time(master_id, client_date):
         if occupied_time in all_appointment_time:
             all_appointment_time.remove(occupied_time)
     return all_appointment_time
+
+
+def get_past_appointment(client_id):
+    connection = sqlite3.connect(BASE)
+    cursor = connection.cursor()
+
+    today = date.today()
+    query = '''
+    SELECT * FROM service_appointment
+    WHERE client_id = ? AND date(appointment_date) < date(?)
+    ORDER BY appointment_date DESC
+    LIMIT 1
+    '''
+    cursor.execute(query, (client_id, today))
+    appointment = cursor.fetchone()
+
+    connection.close()
+    return appointment[0] if appointment else False
+
+
+def sql_add_feedback(appointment_id, client_id, feedback_text):
+    appointment = Appointment.objects.get(id=appointment_id)
+    client = Client.objects.get(id=client_id)
+    feedback = Feedback(appointment=appointment, client=client, feedback_text=feedback_text)
+    feedback.save()
+    return feedback
