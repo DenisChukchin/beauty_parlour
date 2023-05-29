@@ -25,19 +25,6 @@ env = Env()
 env.read_env(override=True)
 bot = telebot.TeleBot(env.str("TELEGRAM_CLIENT_BOT_API_TOKEN"))
 
-EMPTY_CACHE = {
-    'first_time': True,
-    'office': False,
-    'master': False,
-    'procedure': False,
-    'date': False,
-    'time': False,
-    'phone': False,
-    'last_message_id': False
-    }
-
-times = get_free_time
-
 
 def print_booking_text(user_data, not_confirmed=True):
 
@@ -68,11 +55,6 @@ def start_menu(message):
     if 'users' not in bot.__dict__.keys():
         bot.__dict__.update({'users': {}})
 
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    markup.add(types.KeyboardButton(text='📞 Позвонить нам'))
-    bot.send_message(message.chat.id, 'Добро пожаловать в BeautyCity!!!', reply_markup=markup)
-    bot.register_next_step_handler(message, call_us)
-
     bot.__dict__['users'].update({
         message.chat.id: {
             'first_time': True,
@@ -86,17 +68,22 @@ def start_menu(message):
             }})
 
     user_data = bot.__dict__['users'][message.chat.id]
-    user__in_db = sql_get_user_data(message.chat.id)
-    if user__in_db:
+
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton(text='📞 Позвонить нам'))
+    bot.send_message(message.chat.id, 'Добро пожаловать в BeautyCity!!!', reply_markup=markup)
+    bot.register_next_step_handler(message, call_us)
+
+    user_in_db = sql_get_user_data(message.chat.id)
+    if user_in_db:
         user_data['first_time'] = False
-        user_data['phone'] = user__in_db['phone']
+        user_data['phone'] = user_in_db['phone']
 
     dialogue_text = 'Выберите пункт меню:'
     markup_inline = types.InlineKeyboardMarkup(row_width=1)
     about_button = types.InlineKeyboardButton("О Нас", callback_data='about')
     choose_master_button = types.InlineKeyboardButton("Выбор мастера", callback_data='choose_master')
     choose_procedure_button = types.InlineKeyboardButton("Выбор процедуры", callback_data='choose_procedure')
-
     markup_inline.add(about_button, choose_master_button, choose_procedure_button)
     bot.send_message(message.chat.id, dialogue_text, reply_markup=markup_inline)
 
@@ -105,18 +92,10 @@ def main_menu(message):
     user_data = bot.__dict__['users'][message.chat.id]
     dialogue_text = 'Выберите пункт меню:'
     markup = types.InlineKeyboardMarkup(row_width=1)
-    about_button = types.InlineKeyboardButton(
-        "О Нас", callback_data='about'
-    )
-    choose_master_button = types.InlineKeyboardButton(
-        "Выбор мастера", callback_data='choose_master'
-    )
-    choose_procedure_button = types.InlineKeyboardButton(
-        "Выбор процедуры", callback_data='choose_procedure'
-    )
-    send_feedback_button = types.InlineKeyboardButton(
-        "Оставить отзыв о последнем посещении", callback_data='send_feedback'
-    )
+    about_button = types.InlineKeyboardButton("О Нас", callback_data='about')
+    choose_master_button = types.InlineKeyboardButton("Выбор мастера", callback_data='choose_master')
+    choose_procedure_button = types.InlineKeyboardButton("Выбор процедуры", callback_data='choose_procedure')
+    send_feedback_button = types.InlineKeyboardButton("Оставить отзыв о последнем посещении", callback_data='send_feedback')
 
     markup.add(about_button, choose_master_button, choose_procedure_button)
     # markup.add(send_feedback_button)
@@ -128,7 +107,6 @@ def callback_inline(call):
 
     if 'users' not in bot.__dict__.keys():      # Если сервер перезапускался, то клиент вернётся на стартовую страницу
         bot.__dict__.update({'users': {}})
-        bot.__dict__['users'].update({call.message.chat.id: EMPTY_CACHE})
         bot.delete_message(call.message.chat.id, call.message.id)
         start_menu(call.message)
         call.data = ''
@@ -293,7 +271,7 @@ def confirmation(message, time=None):
         dialogue_text += 'или отправьте в чат, другой номер для связи.\n\n'
 
         markup = types.InlineKeyboardMarkup(row_width=1)
-        markup.row(types.InlineKeyboardButton('Подтвердить Запись', callback_data='successful_booking'))
+        markup.row(types.InlineKeyboardButton('Подтвердить Контактный Телефон', callback_data='successful_booking'))
         markup.row(types.InlineKeyboardButton('<< Назад', callback_data='re_choose_time#cut_time'))
         bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
         user_data['waiting_for_phone'] = True
@@ -338,39 +316,35 @@ def successful_booking(message):
 @bot.message_handler(content_types=['text'])
 def call_us(message):
     user_data = bot.__dict__['users'][message.chat.id]
+
     if user_data.get('waiting_for_phone', False):
         get_phone(message)
     elif "позвонить нам" in message.text.lower():
-        bot.send_message(
-            message.chat.id, "Рады звонку в любое время – 8 800 555 35 35"
-        )
-    else:
-        bot.send_message(
-            message.chat.id, "Выберите действие из меню"
-                             " или введите 'позвонить нам',"
-                             " чтобы связаться с нами."
-        )
+        bot.send_message(message.chat.id, "Рады звонку в любое время – 8 800 555 35 35")
+        user_data['phone_button_state'] = False
+        time.sleep(1)
 
 
 def get_phone(message):
     user_data = bot.__dict__['users'][message.chat.id]
-    user_data.update({'phone': message.text})
-    user_data['waiting_for_phone'] = False
+    if 'позвонить нам' not in message.text.lower():
+        user_data.update({'phone': message.text})
+        user_data['waiting_for_phone'] = False
 
-    dialogue_text = print_booking_text(user_data)
-    dialogue_text += f'Ваш номер для связи: {user_data["phone"]}' + '\n\n'
-    dialogue_text += f'Подтвердите запись, или введите другой телефон для связи'
+        dialogue_text = print_booking_text(user_data)
+        dialogue_text += f'Ваш номер для связи: {user_data["phone"]}' + '\n\n'
+        dialogue_text += f'Подтвердите запись, или введите другой телефон для связи'
 
-    markup = types.InlineKeyboardMarkup(row_width=1)
-    markup.row(types.InlineKeyboardButton('Подтвердить Запись', callback_data='successful_booking'))
-    markup.row(types.InlineKeyboardButton('<< Назад', callback_data='re_choose_time#cut_phone'))
-    try:
-        bot.edit_message_text(dialogue_text, message.chat.id, user_data['last_message_id'], reply_markup=markup)
-        bot.register_next_step_handler(message, get_phone)
-        time.sleep(2)
-        bot.delete_message(message.chat.id, message.id)
-    except Exception as error:
-        print(error)
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup.row(types.InlineKeyboardButton('Подтвердить Контактный Телефон', callback_data='successful_booking'))
+        markup.row(types.InlineKeyboardButton('<< Назад', callback_data='re_choose_time#cut_phone'))
+        try:
+            bot.edit_message_text(dialogue_text, message.chat.id, user_data['last_message_id'], reply_markup=markup)
+            bot.register_next_step_handler(message, get_phone)
+            time.sleep(2)
+            bot.delete_message(message.chat.id, message.id)
+        except Exception as error:
+            print(error)
 
 
 if __name__ == '__main__':
