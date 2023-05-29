@@ -255,12 +255,11 @@ def choose_time(message, date=None):
 
     markup = types.InlineKeyboardMarkup(row_width=4)
     buttons = []
-    date_for_sql_query = restoring_user_date_for_sql_query(date)
 
     if user_data['master']:
-        free_time = get_free_time(client_date=date_for_sql_query, master_id=user_data['master']['id'])
+        free_time = get_free_time(client_date=date, master_id=user_data['master']['id'])
     else:
-        free_time = get_free_time(client_date=date_for_sql_query, procedure_id=user_data['procedure']['id'])
+        free_time = get_free_time(client_date=date, procedure_id=user_data['procedure']['id'])
 
     for item in free_time:
         buttons.append(types.InlineKeyboardButton(item, callback_data=f'confirmation#{item}'))

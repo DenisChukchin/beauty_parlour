@@ -115,11 +115,11 @@ def get_services_from_base():
 
 
 def restoring_user_date_for_sql_query(client_date):
-    cut_day = client_date[0:2]
-    cut_month = client_date[3:5]
-    year = datetime.date.today().year
-    real_date_for_sql = f'{year}-{cut_month}-{cut_day}'
-    return real_date_for_sql
+    date_without_weekday = client_date.split(' ')[0]
+    parsed_date = date_without_weekday.split('.')
+    current_year = datetime.datetime.now().year
+    formatted_date = f'{current_year}-{parsed_date[1]}-{parsed_date[0]}'
+    return formatted_date
 
 
 def get_free_time(client_date, master_id=False, procedure_id=False):
@@ -130,19 +130,21 @@ def get_free_time(client_date, master_id=False, procedure_id=False):
         '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00',
         '20:30'
     ]
-    sql_filter = f"master_id={master_id}" if master_id else f"service_id={procedure_id}"
+    sql_filter = f"master_id='{master_id}'" if master_id else f"service_id='{procedure_id}'"
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
-    cursor.execute(f"SELECT appointment_time FROM service_appointment "
-                   f"WHERE {sql_filter} "
-                   f"AND appointment_date ='{appointment_date}' "
-                   f"AND appointment_time NOT NULL")
+    cursor.execute(
+        f"""
+        SELECT appointment_time FROM service_appointment
+        WHERE {sql_filter}
+        AND appointment_date ='{appointment_date}'
+        AND appointment_time NOT NULL
+        """)
     free_time = cursor.fetchall()
     connection.close()
-    for x in free_time:
-        occupied_time = x[0]
-        if occupied_time in all_appointment_time:
-            all_appointment_time.remove(occupied_time)
+    for item in free_time:
+        if item[0] in all_appointment_time:
+            all_appointment_time.remove(item[0])
     return all_appointment_time
 
 
