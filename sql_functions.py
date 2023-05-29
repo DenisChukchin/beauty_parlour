@@ -47,18 +47,27 @@ def sql_put_user_phone(tg_id, phone):
     conn.close()
 
 
-def registration_new_appointment(meet_date, meet_time, tg_id, master_id, service_id):
+def registration_new_appointment(meet_date, meet_time, tg_id, master_id=False, service_id=False):
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
-    time_create = datetime.now()
-    appointment_information = [
-        (meet_date, meet_time, time_create, tg_id, master_id, service_id)
-    ]
-    cursor.executemany('''
-                       INSERT INTO service_appointment 
-                       (appointment_date, appointment_time,
-                       time_create, client_id, master_id, service_id)
-                       VALUES (?,?,?,?,?,?)''', appointment_information)
+    time_create = datetime.datetime.now()
+
+    appointment_information = [meet_date, meet_time, time_create, tg_id]
+    if master_id:
+        appointment_information.append(master_id)
+        add_id = 'master_id'
+    else:
+        appointment_information.append(service_id)
+        add_id = 'service_id'
+
+    cursor.execute(
+        f'''
+        INSERT INTO service_appointment
+        (appointment_date, appointment_time, time_create, client_id, {add_id})
+        VALUES (?,?,?,?,?)
+        ''',
+        appointment_information
+        )
 
     connection.commit()
     connection.close()
@@ -100,7 +109,7 @@ def restoring_user_date_for_sql_query(client_date):
     return real_date_for_sql
 
 
-def get_free_time(master_id, client_date):
+def get_free_time(client_date, master_id=False, procedure_id=False):
     appointment_date = restoring_user_date_for_sql_query(client_date)
     all_appointment_time = [
         '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00',
@@ -108,10 +117,11 @@ def get_free_time(master_id, client_date):
         '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00',
         '20:30'
     ]
+    sql_filter = f"master_id={master_id}" if master_id else f"service_id={procedure_id}"
     connection = sqlite3.connect(BASE)
     cursor = connection.cursor()
     cursor.execute(f"SELECT appointment_time FROM service_appointment "
-                   f"WHERE master_id='{master_id}' "
+                   f"WHERE {sql_filter} "
                    f"AND appointment_date ='{appointment_date}' "
                    f"AND appointment_time NOT NULL")
     free_time = cursor.fetchall()
