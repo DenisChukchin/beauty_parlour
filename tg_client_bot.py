@@ -12,11 +12,13 @@ from sql_functions import (
     sql_get_user_data,
     sql_register_new_user,
     sql_put_user_phone,
+    sql_add_feedback,
     get_masters_name_from_base,
     get_services_from_base,
     get_free_time,
+    get_past_appointment,
     registration_new_appointment,
-    restoring_user_date_for_sql_query
+    restoring_user_date_for_sql_query,
 )
 
 import logging
@@ -61,6 +63,7 @@ def start_menu(message):
 
     bot.__dict__['users'].update({
         message.chat.id: {
+            'user_id': sql_get_user_data(message.chat.id)['id'],
             'first_time': True,
             'office': False,
             'master': False,
@@ -89,6 +92,8 @@ def start_menu(message):
     choose_master_button = types.InlineKeyboardButton("Выбор мастера", callback_data='choose_master')
     choose_procedure_button = types.InlineKeyboardButton("Выбор процедуры", callback_data='choose_procedure')
     markup_inline.add(about_button, choose_master_button, choose_procedure_button)
+    if get_past_appointment(user_data['user_id']):
+        markup_inline.add(types.InlineKeyboardButton("Оставить отзыв", callback_data='send_feedback'))
     bot.send_message(message.chat.id, dialogue_text, reply_markup=markup_inline)
 
 
@@ -99,10 +104,10 @@ def main_menu(message):
     about_button = types.InlineKeyboardButton("О Нас", callback_data='about')
     choose_master_button = types.InlineKeyboardButton("Выбор мастера", callback_data='choose_master')
     choose_procedure_button = types.InlineKeyboardButton("Выбор процедуры", callback_data='choose_procedure')
-    send_feedback_button = types.InlineKeyboardButton("Оставить отзыв о последнем посещении", callback_data='send_feedback')
 
     markup.add(about_button, choose_master_button, choose_procedure_button)
-    # markup.add(send_feedback_button)
+    if get_past_appointment(user_data['user_id']):
+        markup.add(types.InlineKeyboardButton("Оставить отзыв", callback_data='send_feedback'))
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
 
 
@@ -135,10 +140,12 @@ def callback_inline(call):
     if call.data.startswith('re_choose_time'): choose_time(call.message)
     if call.data.startswith('confirmation'): confirmation(call.message, args[1])
 
-    if call.data.startswith('successful_booking'): successful_booking(call.message)
-
     if call.data == 'choose_procedure': choose_procedure(call.message)
     if call.data.startswith('procedure'): choose_date(call.message, procedure=int(args[1]))
+
+    if call.data.startswith('successful_booking'): successful_booking(call.message)
+
+    if call.data == 'send_feedback': send_feedback(call.message)
 
 
 def about(message):
@@ -152,6 +159,23 @@ def about(message):
 
     markup.add(button_1, button_back)
     bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
+
+
+def send_feedback(message):
+    user_data = bot.__dict__['users'][message.chat.id]
+
+    dialogue_text = 'Будем Вам очень благодарны' + '\n'
+    dialogue_text += 'за любой оставленный отзыв' + '\n\n'
+    dialogue_text += 'Для этого, просто отправьте в чат' + '\n'
+    dialogue_text += 'все те слова, которые хотели бы оставить' + '\n\n'
+
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    button_back = types.InlineKeyboardButton('<< Назад', callback_data='main_menu')
+
+    markup.add(button_back)
+    bot.edit_message_text(dialogue_text, message.chat.id, message.id, reply_markup=markup)
+    user_data.update({'last_message_id': message.id})
+    bot.register_next_step_handler(message, add_feedback_to_db)
 
 
 def choose_master(message):
@@ -196,7 +220,6 @@ def choose_date(message, master=None, procedure=None):
         back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_master')
     else:
         back_button = types.InlineKeyboardButton('<< Назад', callback_data='choose_procedure')
-
 
     buttons = []
     days = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
@@ -349,6 +372,23 @@ def get_phone(message):
             bot.delete_message(message.chat.id, message.id)
         except Exception as error:
             print(error)
+
+
+def add_feedback_to_db(message):
+    user_data = bot.__dict__['users'][message.chat.id]
+    dialogue_text = 'Ваш отзыв:' + '\n'
+    dialogue_text += message.text + '\n\n'
+    dialogue_text += 'Принят!' + '\n'
+    dialogue_text += 'Большое Вам Спасибо!!!'
+
+    bot.send_message(message.chat.id, dialogue_text)
+    sql_add_feedback(
+        get_past_appointment(user_data['user_id']),
+        user_data['user_id'],
+        message.text
+        )
+    time.sleep(3)
+    start_menu(message)
 
 
 if __name__ == '__main__':

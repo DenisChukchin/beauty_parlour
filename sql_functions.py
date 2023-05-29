@@ -1,5 +1,7 @@
-from datetime import datetime
-from service.models import Appointment, Client, Master, Service, User
+from datetime import datetime, date
+from service.models import (
+    Appointment, Client, Master, Service, User, Feedback
+    )
 import datetime
 import sqlite3
 
@@ -139,3 +141,29 @@ def get_free_time(client_date, master_id=False, procedure_id=False):
         if occupied_time in all_appointment_time:
             all_appointment_time.remove(occupied_time)
     return all_appointment_time
+
+
+def get_past_appointment(client_id):
+    connection = sqlite3.connect(BASE)
+    cursor = connection.cursor()
+
+    today = date.today()
+    query = '''
+    SELECT * FROM service_appointment
+    WHERE client_id = ? AND date(appointment_date) < date(?)
+    ORDER BY appointment_date DESC
+    LIMIT 1
+    '''
+    cursor.execute(query, (client_id, today))
+    appointment = cursor.fetchone()
+
+    connection.close()
+    return appointment[0] if appointment else False
+
+
+def sql_add_feedback(appointment_id, client_id, feedback_text):
+    appointment = Appointment.objects.get(id=appointment_id)
+    client = Client.objects.get(id=client_id)
+    feedback = Feedback(appointment=appointment, client=client, feedback_text=feedback_text)
+    feedback.save()
+    return feedback
