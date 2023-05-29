@@ -92,6 +92,7 @@ class Client(models.Model):
         User, on_delete=models.CASCADE,
         null=True, blank=True, related_name='clients'
     )
+    tg_id = models.IntegerField('Telegram ID', unique=True)  # Добавлено поле для хранения tg_id
     name = models.CharField('Имя клиента', max_length=30)
     phonenumber = PhoneNumberField(
         'Номер телефона клиента', max_length=20,
@@ -148,3 +149,24 @@ class Appointment(models.Model):
 
     def __str__(self):
         return f"{self.appointment_time} - {self.client}"
+
+
+class Feedback(models.Model):
+    appointment = models.ForeignKey(
+        Appointment, on_delete=models.CASCADE,
+        verbose_name='Посещение',
+        related_name='feedbacks'
+    )
+    client = models.ForeignKey(
+        Client, on_delete=models.CASCADE,
+        related_name='feedbacks',
+        verbose_name='Клиент'
+    )
+    feedback_text = models.TextField('Текст обратной связи')
+
+    def __str__(self):
+        return self.feedback_text
+
+    class Meta:
+        verbose_name = 'Обратная связь'
+        verbose_name_plural = 'Отзывы'

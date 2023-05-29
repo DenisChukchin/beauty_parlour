@@ -1,4 +1,5 @@
 from datetime import datetime
+from service.models import Appointment, Client, Master, Service, User
 import datetime
 import sqlite3
 
@@ -6,22 +7,28 @@ BASE = 'db.sqlite3'
 
 
 def sql_register_new_user(tg_id, name, phone):
-    conn = sqlite3.connect(BASE)
-    cur = conn.cursor()
-    time_create = datetime.now()
-    exec_text = f"""
-        INSERT INTO 'service_client' (name, phonenumber, user_id, time_create)
-        VALUES ('{name}','{phone}','{tg_id}','{time_create}')
-        """
-    cur.execute(exec_text)
-    conn.commit()
-    conn.close()
+    time_create = datetime.datetime.now()
+
+    # Создать нового пользователя Django
+    user = User.objects.create_user(username=str(tg_id))
+
+    # Создать новый объект Client
+    client = Client(
+        user=user,
+        tg_id=tg_id,
+        name=name,
+        phonenumber=phone,
+        time_create=time_create
+    )
+
+    # Сохраняем объект Client в базе данных
+    client.save()
 
 
 def sql_get_user_data(tg_id) -> dict:
     conn = sqlite3.connect(BASE)
     cur = conn.cursor()
-    exec_text = f"SELECT * FROM 'service_client' WHERE user_id is '{tg_id}'"
+    exec_text = f"SELECT * FROM 'service_client' WHERE tg_id is '{tg_id}'"
     cur.execute(exec_text)
     result = cur.fetchone()
     conn.close()
@@ -33,7 +40,7 @@ def sql_get_user_data(tg_id) -> dict:
         'id': result[0],
         'name': result[1],
         'phone': result[2],
-        'tg_id': result[4],
+        'tg_id': result[5],
     }
     return formated_result
 
@@ -48,29 +55,30 @@ def sql_put_user_phone(tg_id, phone):
 
 
 def registration_new_appointment(meet_date, meet_time, tg_id, master_id=False, service_id=False):
-    connection = sqlite3.connect(BASE)
-    cursor = connection.cursor()
     time_create = datetime.datetime.now()
 
-    appointment_information = [meet_date, meet_time, time_create, tg_id]
+    # Находим клиента по tg_id
+    client = Client.objects.get(tg_id=tg_id)
+
+    # Создаем новый объект Appointment
+    appointment = Appointment(
+        appointment_date=meet_date,
+        appointment_time=meet_time,
+        time_create=time_create,
+        client=client
+    )
+
     if master_id:
-        appointment_information.append(master_id)
-        add_id = 'master_id'
+        # Находим мастера по master_id
+        master = Master.objects.get(id=master_id)
+        appointment.master = master
     else:
-        appointment_information.append(service_id)
-        add_id = 'service_id'
+        # Находим услугу по service_id
+        service = Service.objects.get(id=service_id)
+        appointment.service = service
 
-    cursor.execute(
-        f'''
-        INSERT INTO service_appointment
-        (appointment_date, appointment_time, time_create, client_id, {add_id})
-        VALUES (?,?,?,?,?)
-        ''',
-        appointment_information
-        )
-
-    connection.commit()
-    connection.close()
+    # Сохраняем объект Appointment в базе данных
+    appointment.save()
 
 
 def get_masters_name_from_base():

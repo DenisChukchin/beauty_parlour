@@ -1,8 +1,12 @@
+import os
 import time
 import datetime
 import telebot
 from telebot import types
 from environs import Env
+from django.core.wsgi import get_wsgi_application
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'saloon.settings')
+application = get_wsgi_application()
 
 from sql_functions import (
     sql_get_user_data,
